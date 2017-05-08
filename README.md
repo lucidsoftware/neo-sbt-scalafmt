@@ -31,7 +31,7 @@ Then
 > scalafmt
 ```
 
-As a CI step, you make want to ensure everything is formatted
+If you want to ensure everything is formatted (e.g. as a CI step),
 
 ```
 > scalafmt::test
