@@ -28,13 +28,15 @@ enablePlugins(ScalafmtPlugin)
 Then
 
 ```
-> scalafmt
+> scalafmt       # format compile sources
+> test:scalafmt  # format test sources
 ```
 
 If you want to ensure everything is formatted (e.g. as a CI step),
 
 ```
-> scalafmt::test
+> scalafmt::test      # check compile sources
+> test:scalafmt::test # check test sources
 ```
 
 ## Additional configuration
