@@ -44,13 +44,21 @@ To change the Scalafmt version,
 
 ```scala
 scalafmtVersion := "0.7.0-RC1"
-// this version can even be changed per-project, if desired
+// can be set per-project
 ```
 
 By default, Scalafmt runs before compiling. You can change that with
 
 ```scala
 scalafmtOnCompile := false
+// can be set per-project
+```
+
+`ScalafmtCorePlugin` defines most of the settings. `ScalaPlugin` applies them to the compile and test configurations.
+To apply them to additional configurations
+
+```scala
+inConfig(Integration)(scalafmtSettings)
 ```
 
 ## Implementation details
