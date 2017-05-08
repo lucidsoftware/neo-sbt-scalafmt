@@ -36,13 +36,16 @@ object ScalafmtCorePlugin extends AutoPlugin {
         scalafmt := {
           val display = SbtUtil.display(thisProjectRef.value, configuration.value)
 
-          val configModified = scalafmtConfig.value.lastModified
           lazy val configString = try IO.read(scalafmtConfig.value) catch {
             case e: FileNotFoundException =>
               streams.value.log.debug(s"${scalafmtConfig.value} does not exist")
               ""
           }
-          lazy val configHash = Hash(configString)
+
+          val classpath = LibraryPlatform.filterConfiguration(update.value, Scalafmt)
+
+          val extraModified = (scalafmtConfig.value +: classpath).map(_.lastModified).max
+          lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(configString))
 
           // It would be simpler to use SBT's built-in FileFunction or similar, but this offers better performance and
           // doesn't tkae that much more work.
@@ -57,13 +60,9 @@ object ScalafmtCorePlugin extends AutoPlugin {
             .get
           val updatedInfo = sources.map { source =>
             val old = oldInfo.getOrElse(source, CachePlatform.fileInfo(source, Nil, Long.MinValue))
-            val updatedLastModified = configModified max old.file.lastModified
+            val updatedLastModified = extraModified max old.file.lastModified
             if (old.lastModified < updatedLastModified) {
-              val updatedHash = Hash(
-                IO.readBytes(old.file) ++
-                  configHash ++
-                  scalafmtVersion.value.getBytes(IO.defaultCharset)
-              )
+              val updatedHash = Hash(IO.readBytes(old.file) ++ extraHash)
               val updatedInfo = CachePlatform.fileInfo(old.file, updatedHash.toList, updatedLastModified)
               Either.cond(Arrays.equals(old.hash.toArray, updatedHash), updatedInfo, updatedInfo)
             } else {
@@ -74,7 +73,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
             streams.value.log.info(s"Formatting $message in $display ...")
           }
 
-          lazy val scalafmtter = scalafmtCache.value(LibraryPlatform.filterConfiguration(update.value, Scalafmt))
+          lazy val scalafmtter = scalafmtCache.value(classpath)
           lazy val config = scalafmtter.config(configString)
           val newInfo = updatedInfo.map(_.left.flatMap { updatedInfo =>
             val c = config
@@ -101,13 +100,16 @@ object ScalafmtCorePlugin extends AutoPlugin {
         test := {
           val display = SbtUtil.display(thisProjectRef.value, configuration.value)
 
-          val configModified = scalafmtConfig.value.lastModified
           lazy val configString = try IO.read(scalafmtConfig.value) catch {
             case e: FileNotFoundException =>
               streams.value.log.debug(s"${scalafmtConfig.value} does not exist")
               ""
           }
-          lazy val configHash = Hash(configString)
+
+          val classpath = LibraryPlatform.filterConfiguration(update.value, Scalafmt)
+
+          val extraModified = (scalafmtConfig.value +: classpath).map(_.lastModified).max
+          lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(configString))
 
           val cacheFile = streams.value.cacheDirectory / "scalafmt"
           val oldInfo: Map[File, HashModifiedFileInfo] = CachePlatform.readFileInfo(cacheFile)
@@ -118,13 +120,9 @@ object ScalafmtCorePlugin extends AutoPlugin {
             .get
           val updatedInfo = sources.map { source =>
             val old = oldInfo.getOrElse(source, CachePlatform.fileInfo(source, Nil, Long.MinValue))
-            val updatedLastModified = configModified max old.file.lastModified
+            val updatedLastModified = extraModified max old.file.lastModified
             if (old.lastModified < updatedLastModified) {
-              val updatedHash = Hash(
-                IO.readBytes(old.file) ++
-                  configHash ++
-                  scalafmtVersion.value.getBytes(IO.defaultCharset)
-              )
+              val updatedHash = Hash(IO.readBytes(old.file) ++ extraHash)
               val updatedInfo = CachePlatform.fileInfo(old.file, updatedHash.toList, updatedLastModified)
               Either.cond(Arrays.equals(old.hash.toArray, updatedHash), updatedInfo, updatedInfo)
             } else {
@@ -135,7 +133,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
             streams.value.log.info(s"Checking formatting for $message in $display ...")
           }
 
-          lazy val scalafmtter = scalafmtCache.value(LibraryPlatform.filterConfiguration(update.value, Scalafmt))
+          lazy val scalafmtter = scalafmtCache.value(classpath)
           lazy val config = scalafmtter.config(configString)
           val newInfo = updatedInfo.map(_.left.flatMap { updatedInfo =>
             val c = config
