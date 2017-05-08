@@ -1,0 +1,149 @@
+package com.lucidchart.sbt.scalafmt
+
+import com.google.common.cache._
+import com.lucidchart.scalafmt.api.Scalafmtter
+import java.io.FileNotFoundException
+import java.util.Arrays
+import sbt.KeyRanks._
+import sbt.Keys._
+import sbt._
+import sbt.plugins.{IvyPlugin, JvmPlugin}
+import scala.collection.breakOut
+import scala.util.control.NonFatal
+
+object ScalafmtCorePlugin extends AutoPlugin {
+
+  object autoImport {
+    val Scalafmt = config("scalafmt")
+
+    val scalafmt = TaskKey[Unit]("scalafmt", "Format Scala sources", ATask)
+    val scalafmtBridge = SettingKey[ModuleID]("scalafmt-bridge", "scalafmt-impl dependency", BMinusSetting)
+    val scalafmtCache = SettingKey[Seq[File] => Scalafmtter]("scalafmtCache", "Cache of Scalafmt instances", DSetting)
+    val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], Class[_ <: Scalafmtter]]]("scalafmt-cache-builder", "CacheBuilder for Scalafmt cache", CSetting)
+    val scalafmtConfig = TaskKey[File]("scalafmt-config", "Scalafmt config file", BTask)
+    val scalafmtOnCompile = SettingKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BSetting)
+    val scalafmtTest = TaskKey[Unit]("scalafmt-test", "Error if sources don't match scalafmt output", ATask)
+    val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmt version", AMinusSetting)
+
+    val scalafmtSettings: Seq[Def.Setting[_]] =
+      Seq(
+        compileInputs in Compile := Def.taskDyn {
+          val task = if (scalafmtOnCompile.value) scalafmt.toTask else Def.task(())
+          task.map(_ => (compileInputs in compile).value)
+        }.value,
+        scalafmt := (scalafmt in scalafmt).value
+      ) ++ inTask(scalafmt)(Seq(
+        sourceDirectories := Seq(scalaSource.value),
+        scalafmt := {
+          val display = SbtUtil.display(thisProjectRef.value, configuration.value)
+
+          val configModified = scalafmtConfig.value.lastModified
+          lazy val configString = try IO.read(scalafmtConfig.value) catch {
+            case e: FileNotFoundException =>
+              streams.value.log.debug(s"${scalafmtConfig.value} does not exist")
+              ""
+          }
+          lazy val configHash = Hash(configString)
+
+          // It would be simpler to use SBT's built-in FileFunction or similar, but this offers better performance and
+          // doesn't tkae that much more work.
+          // We first check timestamps, and only then check hashes.
+
+          val cacheFile = streams.value.cacheDirectory / "scalafmt"
+          val oldInfo: Map[File, HashModifiedFileInfo] = CachePlatform.readFileInfo(cacheFile)
+            .map(info => info.file -> info)(breakOut)
+
+          val sources = (sourceDirectories in scalafmt).value
+            .descendantsExcept((includeFilter in scalafmt).value, (excludeFilter in scalafmt).value)
+            .get
+          val updatedInfo = sources.map { source =>
+            val old = oldInfo.getOrElse(source, CachePlatform.fileInfo(source, Nil, Long.MinValue))
+            val updatedLastModified = configModified max old.file.lastModified
+            if (old.lastModified < updatedLastModified) {
+              val updatedHash = Hash(
+                IO.readBytes(old.file) ++
+                  configHash ++
+                  scalafmtVersion.value.getBytes(IO.defaultCharset)
+              )
+              val updatedInfo = CachePlatform.fileInfo(old.file, updatedHash.toList, updatedLastModified)
+              Either.cond(Arrays.equals(old.hash.toArray, updatedHash), updatedInfo, updatedInfo)
+            } else {
+              Right(CachePlatform.fileInfo(old.file, old.hash, updatedLastModified))
+            }
+          }
+          AnalysisPlatform.counted("Scala source", "", "s", updatedInfo.count(_.isLeft)).foreach { message =>
+            streams.value.log.info(s"Formatting $message in $display ...")
+          }
+
+          lazy val scalafmtter = scalafmtCache.value(LibraryPlatform.filterConfiguration(update.value, Scalafmt))
+          lazy val config = scalafmtter.config(configString)
+          val newInfo = updatedInfo.map(_.left.flatMap { updatedInfo =>
+            val c = config
+            val input = IO.read(updatedInfo.file)
+            val output = try scalafmtter.format(c, input) catch {
+              case NonFatal(e) =>
+                streams.value.log.warn(e.getLocalizedMessage.replace("<input>", updatedInfo.file.toString))
+                input
+            }
+            if (input == output) {
+              Right(updatedInfo)
+            } else {
+              IO.write(updatedInfo.file, output)
+              Left(CachePlatform.fileInfo(updatedInfo.file, Hash(output).toList, updatedInfo.file.lastModified))
+            }
+          })
+          AnalysisPlatform.counted("Scala source", "", "s", newInfo.count(_.isLeft)).foreach { message =>
+            streams.value.log.info(s"Reformatted $message in $display")
+          }
+
+          CachePlatform.writeFileInfo(cacheFile, newInfo.map(_.merge)(breakOut))
+        }
+      ))
+  }
+  import autoImport._
+
+  override val buildSettings = Seq(
+    scalafmtCache := {
+      val cache = scalafmtCacheBuilder.value.build(new CacheLoader[Seq[File], Class[_ <: Scalafmtter]] {
+        def load(classpath: Seq[File]) = {
+          val classLoader = new ScalafmtClassLoader(classpath)
+          classLoader.loadClass("com.lucidchart.scalafmt.impl.Scalafmtter").asInstanceOf[Class[_ <: Scalafmtter]]
+        }
+      })
+      cache.get(_).newInstance
+    },
+    scalafmtCacheBuilder := CacheBuilder.newBuilder.asInstanceOf[CacheBuilder[Seq[File], Class[_ <: Scalafmtter]]]
+      .maximumSize(3),
+    scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
+    scalafmtOnCompile := true,
+    scalafmtVersion := "0.6.8"
+  )
+
+  override val projectSettings = Seq(
+    includeFilter in scalafmt := "*.scala",
+    ivyConfigurations += Scalafmt,
+    ivyScala := ivyScala.value.map(LibraryPlatform.withOverrideScalaVersion(_, false)), // otherwise scala-library conflicts
+    libraryDependencies ++= Seq(
+      "com.geirsson" % "scalafmt-core_2.11" % scalafmtVersion.value % Scalafmt,
+      scalafmtBridge.value % Scalafmt
+    ),
+    scalafmtBridge := {
+      val sVersion = scalafmtVersion.value.split("\\.", -1).toSeq match {
+        case "0" +: "6" +: _ => "0.6"
+        case "0" +: "7" +: _ => "0.7"
+        case _ =>
+          println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}")
+          "0.7"
+      }
+      val version = if (BuildInfo.version.endsWith("-SNAPSHOT")) {
+        s"${BuildInfo.version.stripSuffix("-SNAPSHOT")}-$sVersion-SNAPSHOT"
+      } else {
+        s"${BuildInfo.version}-$sVersion"
+      }
+      "com.lucidchart" % s"scalafmt-impl" % version
+    }
+  )
+
+  override val requires = IvyPlugin && JvmPlugin
+
+}

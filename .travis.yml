@@ -1,0 +1,29 @@
+cache:
+  directories:
+    - $HOME/.ivy2
+    - $HOME/.sbt
+deploy:
+  api_key: $GITHUB_AUTH
+  file: '*/target/**/*.jar'
+  file_glob: true
+  on:
+    tags: true
+  provider: releases
+  skip_cleanup: true
+git:
+  depth: 1
+jdk:
+  - oraclejdk8
+language: scala
+script:
+  - '[ "$TRAVIS_PULL_REQUEST" != false ] || export SBT_OPTS=-Dbuild.version=${TRAVIS_TAG:-$TRAVIS_BRANCH-SNAPSHOT}'
+  - sbt 'all doc:compile test'
+  - |
+    if [ "$TRAVIS_SECURE_ENV_VARS" == true ]; then
+      echo "$PGP_SECRET" | base64 --decode | gpg --import
+      if [ -z "$TRAVIS_TAG" ]; then
+          sbt publishSigned
+      else
+          sbt "sonatypeOpen sbt-scalafmt-$TRAVIS_TAG" publishSigned sonatypeReleaseAll
+      fi
+    fi
