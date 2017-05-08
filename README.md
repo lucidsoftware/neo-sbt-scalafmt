@@ -43,7 +43,7 @@ By default, `.scalafmt.conf` is used for Scalafmt configuration. To choose anoth
 
 ```scala
 scalafmtConfig := (baseDirectory in ThisBuild).value / "other.scalafmt.conf"
-// can be set per-project
+// can be set per-project, per-configuration
 ```
 
 To change the Scalafmt version,
@@ -57,7 +57,7 @@ By default, Scalafmt runs before compiling. You can change that with
 
 ```scala
 scalafmtOnCompile := false
-// can be set per-project
+// can be set per-project, per-configuration
 ```
 
 `ScalafmtCorePlugin` defines most of the settings. `ScalaPlugin` applies them to the compile and test configurations.
