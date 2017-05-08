@@ -33,6 +33,13 @@ Then
 
 ## Additional configuration
 
+By default, `.scalafmt.conf` is used for Scalafmt configuration. To choose another location
+
+```scala
+scalafmtConfig := (baseDirectory in ThisBuild).value / "other.scalafmt.conf"
+// can be set per-project
+```
+
 To change the Scalafmt version,
 
 ```scala
