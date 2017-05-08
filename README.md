@@ -72,4 +72,5 @@ inConfig(Integration)(scalafmtSettings)
 Loading Scalafmt in a separate classloader allows sbt-scalafmt to work across sbt and Scalafmt versions, regardless of
 the Scala versions used.
 
-Scalafmt artifacts are downloaded with a scalafmt Ivy configuration.
+Scalafmt artifacts are downloaded with a scalafmt Ivy configuration. The configuration is add to each project, so if you
+have a lot of projects, you may see `update` times increase a little. Fortunately, this is re-run infrequently.
