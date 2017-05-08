@@ -22,7 +22,6 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], Class[_ <: Scalafmtter]]]("scalafmt-cache-builder", "CacheBuilder for Scalafmt cache", CSetting)
     val scalafmtConfig = TaskKey[File]("scalafmt-config", "Scalafmt config file", BTask)
     val scalafmtOnCompile = SettingKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BSetting)
-    val scalafmtTest = TaskKey[Unit]("scalafmt-test", "Error if sources don't match scalafmt output", ATask)
     val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmt version", AMinusSetting)
 
     val scalafmtSettings: Seq[Def.Setting[_]] =
@@ -97,6 +96,67 @@ object ScalafmtCorePlugin extends AutoPlugin {
           }
 
           CachePlatform.writeFileInfo(cacheFile, newInfo.map(_.merge)(breakOut))
+        }
+      )) ++ inTask(scalafmt)(Seq(
+        test := {
+          val display = SbtUtil.display(thisProjectRef.value, configuration.value)
+
+          val configModified = scalafmtConfig.value.lastModified
+          lazy val configString = try IO.read(scalafmtConfig.value) catch {
+            case e: FileNotFoundException =>
+              streams.value.log.debug(s"${scalafmtConfig.value} does not exist")
+              ""
+          }
+          lazy val configHash = Hash(configString)
+
+          val cacheFile = streams.value.cacheDirectory / "scalafmt"
+          val oldInfo: Map[File, HashModifiedFileInfo] = CachePlatform.readFileInfo(cacheFile)
+            .map(info => info.file -> info)(breakOut)
+
+          val sources = (sourceDirectories in scalafmt).value
+            .descendantsExcept((includeFilter in scalafmt).value, (excludeFilter in scalafmt).value)
+            .get
+          val updatedInfo = sources.map { source =>
+            val old = oldInfo.getOrElse(source, CachePlatform.fileInfo(source, Nil, Long.MinValue))
+            val updatedLastModified = configModified max old.file.lastModified
+            if (old.lastModified < updatedLastModified) {
+              val updatedHash = Hash(
+                IO.readBytes(old.file) ++
+                  configHash ++
+                  scalafmtVersion.value.getBytes(IO.defaultCharset)
+              )
+              val updatedInfo = CachePlatform.fileInfo(old.file, updatedHash.toList, updatedLastModified)
+              Either.cond(Arrays.equals(old.hash.toArray, updatedHash), updatedInfo, updatedInfo)
+            } else {
+              Right(CachePlatform.fileInfo(old.file, old.hash, updatedLastModified))
+            }
+          }
+          AnalysisPlatform.counted("Scala source", "", "s", updatedInfo.count(_.isLeft)).foreach { message =>
+            streams.value.log.info(s"Checking formatting for $message in $display ...")
+          }
+
+          lazy val scalafmtter = scalafmtCache.value(LibraryPlatform.filterConfiguration(update.value, Scalafmt))
+          lazy val config = scalafmtter.config(configString)
+          val newInfo = updatedInfo.map(_.left.flatMap { updatedInfo =>
+            val c = config
+            val input = IO.read(updatedInfo.file)
+            val output = try scalafmtter.format(c, input) catch {
+              case NonFatal(e) =>
+                streams.value.log.warn(e.getLocalizedMessage.replace("<input>", updatedInfo.file.toString))
+                input
+            }
+            if (input == output) {
+              Right(updatedInfo)
+            } else {
+              streams.value.log.error(s"${updatedInfo.file} has changes after scalafmt")
+              Left(CachePlatform.fileInfo(updatedInfo.file, Nil, Long.MinValue))
+            }
+          })
+
+          CachePlatform.writeFileInfo(cacheFile, newInfo.map(_.merge)(breakOut))
+          AnalysisPlatform.counted("Scala source", "", "s", newInfo.count(_.isLeft)).foreach { message =>
+            throw new ScalafmtCheckFailure(s"$message not formatted in $display")
+          }
         }
       ))
   }

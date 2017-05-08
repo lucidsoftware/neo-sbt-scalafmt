@@ -31,6 +31,12 @@ Then
 > scalafmt
 ```
 
+As a CI step, you make want to ensure everything is formatted
+
+```
+> scalafmt::test
+```
+
 ## Additional configuration
 
 By default, `.scalafmt.conf` is used for Scalafmt configuration. To choose another location
