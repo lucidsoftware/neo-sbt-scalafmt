@@ -55,10 +55,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
           val oldInfo: Map[File, HashModifiedFileInfo] = CachePlatform.readFileInfo(cacheFile)
             .map(info => info.file -> info)(breakOut)
 
-          val sources = (sourceDirectories in scalafmt).value
-            .descendantsExcept((includeFilter in scalafmt).value, (excludeFilter in scalafmt).value)
-            .get
-          val updatedInfo = sources.map { source =>
+          val updatedInfo = sources.value.map { source =>
             val old = oldInfo.getOrElse(source, CachePlatform.fileInfo(source, Nil, Long.MinValue))
             val updatedLastModified = extraModified max old.file.lastModified
             if (old.lastModified < updatedLastModified) {
@@ -95,7 +92,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
           }
 
           CachePlatform.writeFileInfo(cacheFile, newInfo.map(_.merge)(breakOut))
-        }
+        },
+        sources := Defaults.collectFiles(sourceDirectories, includeFilter, excludeFilter).value
       )) ++ inTask(scalafmt)(Seq(
         test := {
           val display = SbtUtil.display(thisProjectRef.value, configuration.value)
@@ -115,10 +113,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
           val oldInfo: Map[File, HashModifiedFileInfo] = CachePlatform.readFileInfo(cacheFile)
             .map(info => info.file -> info)(breakOut)
 
-          val sources = (sourceDirectories in scalafmt).value
-            .descendantsExcept((includeFilter in scalafmt).value, (excludeFilter in scalafmt).value)
-            .get
-          val updatedInfo = sources.map { source =>
+          val updatedInfo = sources.value.map { source =>
             val old = oldInfo.getOrElse(source, CachePlatform.fileInfo(source, Nil, Long.MinValue))
             val updatedLastModified = extraModified max old.file.lastModified
             if (old.lastModified < updatedLastModified) {
