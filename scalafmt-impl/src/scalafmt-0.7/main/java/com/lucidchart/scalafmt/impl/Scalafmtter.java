@@ -13,7 +13,7 @@ public final class Scalafmtter implements com.lucidchart.scalafmt.api.Scalafmtte
     }
 
     // Otherwise, this cache hangs on to a lot
-    public void finalize() throws Throwable {
+    protected void finalize() throws Throwable {
         try {
             PlatformTokenizerCache.megaCache().clear();
         } finally {
