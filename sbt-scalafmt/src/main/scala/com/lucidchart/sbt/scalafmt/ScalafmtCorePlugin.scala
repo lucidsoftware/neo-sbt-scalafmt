@@ -21,7 +21,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtCache = SettingKey[Seq[File] => Scalafmtter]("scalafmtCache", "Cache of Scalafmt instances", DSetting)
     val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], Class[_ <: Scalafmtter]]]("scalafmt-cache-builder", "CacheBuilder for Scalafmt cache", CSetting)
     val scalafmtConfig = TaskKey[File]("scalafmt-config", "Scalafmt config file", BTask)
-    val scalafmtOnCompile = SettingKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BSetting)
+    val scalafmtOnCompile = TaskKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BTask)
     val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmt version", AMinusSetting)
 
     val scalafmtSettings: Seq[Def.Setting[_]] =
