@@ -87,7 +87,13 @@ object ScalafmtCorePlugin extends AutoPlugin {
                 val output = try scalafmtter.format(c, input)
                 catch {
                   case NonFatal(e) =>
-                    streams.value.log.warn(e.getLocalizedMessage.replace("<input>", updatedInfo.file.toString))
+                    val exceptionMesssage = e.getLocalizedMessage
+                    val message = if (exceptionMesssage.contains("<input>")) {
+                      exceptionMesssage.replace("<input>", updatedInfo.file.toString)
+                    } else {
+                      s"${updatedInfo.file}:\n$exceptionMesssage"
+                    }
+                    streams.value.log.warn(message)
                     input
                 }
                 if (input == output) {
