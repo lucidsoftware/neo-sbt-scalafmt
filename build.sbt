@@ -19,11 +19,13 @@ inScope(Global)(Seq(
   version := sys.props.getOrElse("build.version", "0-SNAPSHOT")
 ))
 
+scalafmtVersion in ThisBuild := "0.7.0-RC1"
+
 lazy val `scalafmt-api` = project
 
-lazy val scalafmtVersion = settingKey[String]("Scalafmt version")
+lazy val localScalafmtVersion = settingKey[String]("Scalafmt version")
 
-lazy val `scalafmt-impl` = project.dependsOn(`scalafmt-api`).cross(new LibraryVersionAxis("scalafmt", scalafmtVersion, _.split("\\.").take(2).mkString(".")))
+lazy val `scalafmt-impl` = project.dependsOn(`scalafmt-api`).cross(new LibraryVersionAxis("scalafmt", localScalafmtVersion, _.split("\\.").take(2).mkString(".")))
 lazy val `scalafmt-impl-0.6` = `scalafmt-impl`("0.6.8").settings(
   scalaVersion := "2.11.8"
 )

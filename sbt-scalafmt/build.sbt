@@ -1,4 +1,4 @@
-enablePlugins(BuildInfoPlugin)
+enablePlugins(BuildInfoPlugin, ScalafmtPlugin)
 
 buildInfoKeys := Seq[BuildInfoKey.Entry[_]](version)
 
