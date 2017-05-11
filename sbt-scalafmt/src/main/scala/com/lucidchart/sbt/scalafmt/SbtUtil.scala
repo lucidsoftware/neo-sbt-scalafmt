@@ -1,6 +1,6 @@
 package com.lucidchart.sbt.scalafmt
 
-import sbt.{Configuration, ProjectRef, file}
+import sbt.{file, Configuration, ProjectRef}
 
 object SbtUtil {
 
