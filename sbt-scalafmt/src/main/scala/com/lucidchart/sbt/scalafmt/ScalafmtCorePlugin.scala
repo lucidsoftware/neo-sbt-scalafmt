@@ -37,6 +37,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
         scalafmt := (scalafmt in scalafmt).value
       ) ++ inTask(scalafmt)(
         Seq(
+          externalDependencyClasspath := Classpaths.managedJars(Scalafmt, classpathTypes.value, update.value),
           sourceDirectories := Seq(scalaSource.value),
           scalafmt := {
             val display = SbtUtil.display(thisProjectRef.value, configuration.value)
@@ -48,7 +49,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
                 ""
             }
 
-            val classpath = LibraryPlatform.filterConfiguration(update.value, Scalafmt)
+            val classpath = externalDependencyClasspath.value.map(_.data)
 
             val extraModified = (scalafmtConfig.value +: classpath).map(_.lastModified).max
             lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(configString))
@@ -123,7 +124,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
                 ""
             }
 
-            val classpath = LibraryPlatform.filterConfiguration(update.value, Scalafmt)
+            val classpath = externalDependencyClasspath.value.map(_.data)
 
             val extraModified = (scalafmtConfig.value +: classpath).map(_.lastModified).max
             lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(configString))

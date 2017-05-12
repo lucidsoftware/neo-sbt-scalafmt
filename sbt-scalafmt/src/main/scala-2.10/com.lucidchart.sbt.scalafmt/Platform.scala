@@ -19,8 +19,5 @@ object CachePlatform {
 }
 
 object LibraryPlatform {
-  def filterConfiguration(update: UpdateReport, configuration: Configuration) =
-    update.select(configurationFilter(configuration.name))
-
   def withOverrideScalaVersion(ivyScala: IvyScala, value: Boolean) = ivyScala.copy(overrideScalaVersion = value)
 }

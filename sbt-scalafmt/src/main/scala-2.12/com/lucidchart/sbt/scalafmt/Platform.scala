@@ -3,7 +3,6 @@ package com.lucidchart.sbt.scalafmt
 import sbt._
 import sbt.internal.inc.Analysis
 import sbt.librarymanagement.IvyScala
-import sbt.librarymanagement.syntax._
 import sbt.util.CacheImplicits._
 import sbt.util.CacheStore
 import scala.reflect.runtime.universe
@@ -30,8 +29,5 @@ object CachePlatform {
 }
 
 object LibraryPlatform {
-  def filterConfiguration(update: UpdateReport, configuration: Configuration) =
-    update.select(configurationFilter(configuration.name))
-
   def withOverrideScalaVersion(ivyScala: IvyScala, value: Boolean) = ivyScala.withOverrideScalaVersion(value)
 }
