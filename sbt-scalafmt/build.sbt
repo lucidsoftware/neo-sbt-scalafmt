@@ -15,3 +15,9 @@ scalacOptions ++= Seq(
   "-deprecation",
   "-feature"
 )
+
+scriptedSettings
+scriptedBufferLog := false
+scriptedLaunchOpts := Seq(
+  "-Dplugin.version=" + version.value
+)

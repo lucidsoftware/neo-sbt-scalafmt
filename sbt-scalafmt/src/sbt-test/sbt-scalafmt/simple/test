@@ -1,0 +1,3 @@
+-> scalafmt::test
+> scalafmt
+> scalafmt::test
