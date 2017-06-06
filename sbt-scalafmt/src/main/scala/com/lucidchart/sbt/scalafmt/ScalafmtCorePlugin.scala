@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
 object ScalafmtCorePlugin extends AutoPlugin {
 
   object autoImport {
-    val Scalafmt = config("scalafmt")
+    val Scalafmt = config("scalafmt").hide
 
     val scalafmt = TaskKey[Unit]("scalafmt", "Format Scala sources", ATask)
     val scalafmtBridge = SettingKey[ModuleID]("scalafmt-bridge", "scalafmt-impl dependency", BMinusSetting)
