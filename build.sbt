@@ -11,11 +11,11 @@ inScope(Global)(Seq(
   developers ++= List(
     Developer("pauldraper", "Paul Draper", "", url("https://github.com/pauldraper"))
   ),
-  homepage := Some(url("https://github.com/lucidsoftware/sbt-neo-scalafmt")),
+  homepage := Some(url("https://github.com/lucidsoftware/neo-sbt-scalafmt")),
   licenses += "Apache License 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"),
   organization := "com.lucidchart",
   PgpKeys.pgpPassphrase := Some(Array.emptyCharArray),
-  scmInfo := Some(ScmInfo(url("https://github.com/lucidsoftware/sbt-neo-scalafmt"), "scm:git:git@github.com:lucidsoftware/sbt-neo-scalafmt.git")),
+  scmInfo := Some(ScmInfo(url("https://github.com/lucidsoftware/neo-sbt-scalafmt"), "scm:git:git@github.com:lucidsoftware/neo-sbt-scalafmt.git")),
   version := sys.props.getOrElse("build.version", "0-SNAPSHOT")
 ))
 
