@@ -160,7 +160,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
                 val input = IO.read(updatedInfo.file)
                 val output = try scalafmtter.format(c, input)
                 catch {
-                  case NonFatal(e) =>
+                  case NonFatal(e) if ignoreErrors.value =>
                     streams.value.log.warn(e.getLocalizedMessage.replace("<input>", updatedInfo.file.toString))
                     input
                 }
