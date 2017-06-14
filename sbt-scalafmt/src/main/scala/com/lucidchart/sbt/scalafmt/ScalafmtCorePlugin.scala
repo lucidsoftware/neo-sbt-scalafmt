@@ -194,7 +194,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
       .asInstanceOf[CacheBuilder[Seq[File], Class[_ <: Scalafmtter]]]
       .maximumSize(3),
     scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
-    scalafmtOnCompile := true,
+    scalafmtOnCompile := false,
     scalafmtVersion := "0.6.8"
   )
 
@@ -225,5 +225,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
   )
 
   override val requires = IvyPlugin && JvmPlugin
+
+  override val trigger = allRequirements
 
 }

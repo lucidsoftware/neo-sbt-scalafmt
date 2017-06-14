@@ -9,4 +9,6 @@ object ScalafmtPlugin extends AutoPlugin {
 
   override val requires = ScalafmtCorePlugin
 
+  override val trigger = allRequirements
+
 }

@@ -55,10 +55,11 @@ scalafmtVersion := "0.7.0-RC1"
 // can be set per-project
 ```
 
-By default, Scalafmt runs before compiling. You can change that with
+As of 1.0, ScalafmtPlugin is enabled automatically, but does not run scalafmt automatically. To run scalafmt
+automatically before compiling.
 
 ```scala
-scalafmtOnCompile := false
+scalafmtOnCompile := true
 // can be set per-project, per-configuration
 ```
 
