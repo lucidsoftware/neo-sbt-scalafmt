@@ -19,12 +19,6 @@ addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "<version>")
 // see the Maven badge above for the latest version
 ```
 
-Then enable it in your projects
-
-```scala
-enablePlugins(ScalafmtPlugin)
-```
-
 Then
 
 ```
