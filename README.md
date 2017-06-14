@@ -16,7 +16,7 @@ In `project/plugins.sbt`,
 
 ```scala
 addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "<version>")
-// see the Maven badge above for the latest version
+// see the Maven badge at the top of this README for the latest version
 ```
 
 Then
@@ -26,7 +26,7 @@ Then
 > test:scalafmt  # format test sources
 ```
 
-If you want to ensure everything is formatted (e.g. as a CI step),
+If you want to ensure everything is formatted, and fail if it is not (e.g. as a CI step),
 
 ```
 > scalafmt::test      # check compile sources
@@ -38,30 +38,33 @@ If you want to ensure everything is formatted (e.g. as a CI step),
 By default, `.scalafmt.conf` is used for Scalafmt configuration. To choose another location
 
 ```scala
-scalafmtConfig := (baseDirectory in ThisBuild).value / "other.scalafmt.conf"
-// can be set per-project, per-configuration
+scalafmtConfig in ThisBuild := file("other.scalafmt.conf") // all projects
+scalafmtConfig := file("other.scalafmt.conf")              // current project
+scalafmtConfig in Compile := file("other.scalafmt.conf")   // current project, specific configuration
 ```
 
 To change the Scalafmt version,
 
 ```scala
-scalafmtVersion := "1.0.0-RC2"
-// can be set per-project
+scalafmtVersion in ThisBuild := "1.0.0-RC2" // all projects
+scalafmtVersion := "1.0.0-RC2"              // current project
 ```
 
 As of 1.0, ScalafmtPlugin is enabled automatically, but does not run scalafmt automatically. To run scalafmt
 automatically before compiling.
 
 ```scala
-scalafmtOnCompile := true
-// can be set per-project, per-configuration
+scalafmtOnCompile in ThisBuild := true // all projects
+scalafmtOnCompile := true              // current project
+scalafmtOnCompile in Compile := true   // current project, specific configuration
 ```
 
 Most scalafmt errors do not fail the scalafmt task. To fail the task for any scalafmt errors.
 
 ```scala
-ignoreErrors in scalafmt := false
-// can be set per-project, per-configuration
+ignoreErrors in (ThisBuild, scalafmt) := false // all projects
+ignoreErrors in scalafmt := false              // current project
+ignoreErrors in (Compile, scalafmt) := false   // current project, specific configuration
 ```
 
 `ScalafmtCorePlugin` defines most of the settings. `ScalaPlugin` applies them to the compile and test configurations.
@@ -73,8 +76,5 @@ inConfig(Integration)(scalafmtSettings)
 
 ## Implementation details
 
-Loading Scalafmt in a separate classloader allows sbt-scalafmt to work across sbt and Scalafmt versions, regardless of
-the Scala versions used.
-
-Scalafmt artifacts are downloaded with a scalafmt Ivy configuration. The configuration is add to each project, so if you
-have a lot of projects, you may see `update` times increase a little. Fortunately, this is re-run infrequently.
+Scalafmt artifacts are downloaded with a scalafmt Ivy configuration added to each project. Scalafmt classes are loaded
+in a separate classloader, allowing them work regardless of the Scala version of SBT.
