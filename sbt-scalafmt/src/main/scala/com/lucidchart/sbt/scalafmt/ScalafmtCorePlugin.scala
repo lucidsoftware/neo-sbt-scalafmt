@@ -30,8 +30,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
 
     val scalafmtSettings: Seq[Def.Setting[_]] =
       Seq(
-        compileInputs in Compile := Def.taskDyn {
-          val task = if (scalafmtOnCompile.value) scalafmt.toTask else Def.task(())
+        compileInputs in compile := Def.taskDyn {
+          val task = if (scalafmtOnCompile.value) scalafmt in resolvedScoped.value.scope else Def.task(())
           task.map(_ => (compileInputs in compile).value)
         }.value,
         scalafmt := (scalafmt in scalafmt).value
