@@ -16,6 +16,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
   object autoImport {
     val Scalafmt = config("scalafmt").hide
 
+    val ignoreErrors = TaskKey[Boolean]("ignore-errors", "Ignore errors for a task", BTask)
+
     val scalafmt = TaskKey[Unit]("scalafmt", "Format Scala sources", ATask)
     val scalafmtBridge = SettingKey[ModuleID]("scalafmt-bridge", "scalafmt-impl dependency", BMinusSetting)
     val scalafmtCache = SettingKey[Seq[File] => Scalafmtter]("scalafmtCache", "Cache of Scalafmt instances", DSetting)
@@ -87,7 +89,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
                 val input = IO.read(updatedInfo.file)
                 val output = try scalafmtter.format(c, input)
                 catch {
-                  case NonFatal(e) =>
+                  case NonFatal(e) if ignoreErrors.value =>
                     val exceptionMesssage = e.getLocalizedMessage
                     val message = if (exceptionMesssage.contains("<input>")) {
                       exceptionMesssage.replace("<input>", updatedInfo.file.toString)
@@ -181,6 +183,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
   import autoImport._
 
   override val buildSettings = Seq(
+    ignoreErrors := true,
     scalafmtCache := {
       val cache = scalafmtCacheBuilder.value.build(new CacheLoader[Seq[File], Class[_ <: Scalafmtter]] {
         def load(classpath: Seq[File]) = {

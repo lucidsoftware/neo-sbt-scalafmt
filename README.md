@@ -57,6 +57,13 @@ scalafmtOnCompile := true
 // can be set per-project, per-configuration
 ```
 
+Most scalafmt errors do not fail the scalafmt task. To fail the task for any scalafmt errors.
+
+```scala
+ignoreErrors in scalafmt := false
+// can be set per-project, per-configuration
+```
+
 `ScalafmtCorePlugin` defines most of the settings. `ScalaPlugin` applies them to the compile and test configurations.
 To apply them to additional configurations
 
