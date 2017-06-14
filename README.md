@@ -6,7 +6,7 @@
 A SBT plugin for Scalafmt that
 
 * supports SBT 0.13 and 1.0.0-M5
-* supports Scalafmt 0.6 and 0.7
+* supports Scalafmt 0.6, 0.7, and 1.0
 * runs in-process
 * uses SBT's ivy2 for dependency resolution
 
@@ -51,7 +51,7 @@ scalafmtConfig := (baseDirectory in ThisBuild).value / "other.scalafmt.conf"
 To change the Scalafmt version,
 
 ```scala
-scalafmtVersion := "0.7.0-RC1"
+scalafmtVersion := "1.0.0-RC2"
 // can be set per-project
 ```
 
