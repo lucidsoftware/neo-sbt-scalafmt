@@ -30,6 +30,45 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtOnCompile = TaskKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BTask)
     val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmt version", AMinusSetting)
 
+    private[this] val scalafmtConfigString = Def.task {
+      val file = scalafmtConfig.value
+      val logger = streams.value.log
+      () =>
+        try IO.read(file)
+        catch {
+          case _: FileNotFoundException =>
+            logger.debug(s"$file does not exist")
+            ""
+        }
+    }
+
+    private[this] val scalafmtter = Def.task {
+      val classpath = externalDependencyClasspath.value
+      val cache = scalafmtCache.value
+      val ignoreErrors = this.ignoreErrors.value
+      val logger = streams.value.log
+      (configString: String) =>
+        {
+          val scalafmtter = cache(classpath.map(_.data))
+          val config = scalafmtter.config(configString)
+          (name: String, input: String) =>
+            {
+              try scalafmtter.format(config, input)
+              catch {
+                case NonFatal(e) if ignoreErrors =>
+                  val exceptionMesssage = e.getLocalizedMessage
+                  val message = if (exceptionMesssage.contains("<input>")) {
+                    exceptionMesssage.replace("<input>", name)
+                  } else {
+                    s"$name:\n$exceptionMesssage"
+                  }
+                  logger.warn(message)
+                  input
+              }
+            }
+        }
+    }
+
     val scalafmtSettings: Seq[Def.Setting[_]] =
       Seq(
         compileInputs in compile := Def.taskDyn {
@@ -40,30 +79,25 @@ object ScalafmtCorePlugin extends AutoPlugin {
         scalafmt := (scalafmt in scalafmt).value
       ) ++ inTask(scalafmt)(
         Seq(
+          clean := IO.delete(streams.value.cacheDirectory),
           externalDependencyClasspath := Classpaths.managedJars(Scalafmt, classpathTypes.value, update.value),
           sourceDirectories := Seq(scalaSource.value),
           scalafmt := {
-            val sts = streams.value
-            val logger = sts.log
+            val logger = streams.value.log
             val display = SbtUtil.display(thisProjectRef.value, configuration.value)
 
-            lazy val configString = try IO.read(scalafmtConfig.value)
-            catch {
-              case e: FileNotFoundException =>
-                logger.debug(s"${scalafmtConfig.value} does not exist")
-                ""
-            }
-
             val classpath = externalDependencyClasspath.value.map(_.data)
-
             val extraModified = (scalafmtConfig.value +: classpath).map(_.lastModified).max
+
+            lazy val configString = scalafmtConfigString.value()
             lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(configString))
+            lazy val scalafmtter = this.scalafmtter.value(configString)
 
             // It would be simpler to use SBT's built-in FileFunction or similar, but this offers better performance and
-            // doesn't tkae that much more work.
+            // doesn't take that much more work.
             // We first check timestamps, and only then check hashes.
 
-            val cacheFile = sts.cacheDirectory / "scalafmt"
+            val cacheFile = streams.value.cacheDirectory / "scalafmt"
             val oldInfo: Map[File, HashModifiedFileInfo] = CachePlatform
               .readFileInfo(cacheFile)
               .map(info => info.file -> info)(breakOut)
@@ -84,31 +118,16 @@ object ScalafmtCorePlugin extends AutoPlugin {
               logger.info(s"Formatting $message in $display ...")
             }
 
-            lazy val scalafmtter = scalafmtCache.value(classpath)
-            lazy val config = scalafmtter.config(configString)
-            val shouldIgnore = ignoreErrors.value
-            val newInfo = updatedInfo.map(_.left.flatMap {
-              updatedInfo =>
-                val c = config
-                val input = IO.read(updatedInfo.file)
-                val output = try scalafmtter.format(c, input)
-                catch {
-                  case NonFatal(e) if shouldIgnore =>
-                    val exceptionMesssage = e.getLocalizedMessage
-                    val message = if (exceptionMesssage.contains("<input>")) {
-                      exceptionMesssage.replace("<input>", updatedInfo.file.toString)
-                    } else {
-                      s"${updatedInfo.file}:\n$exceptionMesssage"
-                    }
-                    logger.warn(message)
-                    input
-                }
-                if (input == output) {
-                  Right(updatedInfo)
-                } else {
+            val newInfo = updatedInfo.map(_.left.flatMap { updatedInfo =>
+              val input = IO.read(updatedInfo.file)
+              val output = scalafmtter(updatedInfo.file.toString, input)
+              Either.cond(
+                input == output,
+                updatedInfo, {
                   IO.write(updatedInfo.file, output)
-                  Left(CachePlatform.fileInfo(updatedInfo.file, Hash(output).toList, updatedInfo.file.lastModified))
+                  CachePlatform.fileInfo(updatedInfo.file, Hash(output).toList, updatedInfo.file.lastModified)
                 }
+              )
             })
             AnalysisPlatform.counted("Scala source", "", "s", newInfo.count(_.isLeft)).foreach { message =>
               logger.info(s"Reformatted $message in $display")
@@ -121,66 +140,23 @@ object ScalafmtCorePlugin extends AutoPlugin {
       ) ++ inTask(scalafmt)(
         Seq(
           test := {
-            val sts = streams.value
-            val logger = sts.log
+            // Nothing is currently cached. This is probably okay since it is run for CI builds.
+            val logger = streams.value.log
             val display = SbtUtil.display(thisProjectRef.value, configuration.value)
-
-            lazy val configString = try IO.read(scalafmtConfig.value)
-            catch {
-              case e: FileNotFoundException =>
-                logger.debug(s"${scalafmtConfig.value} does not exist")
-                ""
-            }
-
-            val classpath = externalDependencyClasspath.value.map(_.data)
-
-            val extraModified = (scalafmtConfig.value +: classpath).map(_.lastModified).max
-            lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(configString))
-
-            val cacheFile = sts.cacheDirectory / "scalafmt"
-            val oldInfo: Map[File, HashModifiedFileInfo] = CachePlatform
-              .readFileInfo(cacheFile)
-              .map(info => info.file -> info)(breakOut)
-
-            val updatedInfo = sources.value.map {
-              source =>
-                val old = oldInfo.getOrElse(source, CachePlatform.fileInfo(source, Nil, Long.MinValue))
-                val updatedLastModified = extraModified max old.file.lastModified
-                if (old.lastModified < updatedLastModified) {
-                  val updatedHash = Hash(IO.readBytes(old.file) ++ extraHash)
-                  val updatedInfo = CachePlatform.fileInfo(old.file, updatedHash.toList, updatedLastModified)
-                  Either.cond(Arrays.equals(old.hash.toArray, updatedHash), updatedInfo, updatedInfo)
-                } else {
-                  Right(CachePlatform.fileInfo(old.file, old.hash, updatedLastModified))
-                }
-            }
-            AnalysisPlatform.counted("Scala source", "", "s", updatedInfo.count(_.isLeft)).foreach { message =>
+            AnalysisPlatform.counted("Scala source", "", "s", sources.value.size).foreach { message =>
               logger.info(s"Checking formatting for $message in $display ...")
             }
 
-            lazy val scalafmtter = scalafmtCache.value(classpath)
-            lazy val config = scalafmtter.config(configString)
-            val shouldIgnore = ignoreErrors.value
-            val newInfo = updatedInfo.map(_.left.flatMap {
-              updatedInfo =>
-                val c = config
-                val input = IO.read(updatedInfo.file)
-                val output = try scalafmtter.format(c, input)
-                catch {
-                  case NonFatal(e) if shouldIgnore =>
-                    logger.warn(e.getLocalizedMessage.replace("<input>", updatedInfo.file.toString))
-                    input
-                }
-                if (input == output) {
-                  Right(updatedInfo)
-                } else {
-                  logger.error(s"${updatedInfo.file} has changes after scalafmt")
-                  Left(CachePlatform.fileInfo(updatedInfo.file, Nil, Long.MinValue))
-                }
-            })
-
-            CachePlatform.writeFileInfo(cacheFile, newInfo.map(_.merge)(breakOut))
-            AnalysisPlatform.counted("Scala source", "", "s", newInfo.count(_.isLeft)).foreach { message =>
+            val scalafmtter = this.scalafmtter.value(scalafmtConfigString.value())
+            val differentCount = sources.value.count { file =>
+              val content = IO.read(file)
+              val hasChanges = content != scalafmtter(file.toString, content)
+              if (hasChanges) {
+                logger.error(s"$file has changes after scalafmt")
+              }
+              hasChanges
+            }
+            AnalysisPlatform.counted("Scala source", "", "s", differentCount).foreach { message =>
               throw new ScalafmtCheckFailure(s"$message not formatted in $display")
             }
           }
