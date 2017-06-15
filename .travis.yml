@@ -17,7 +17,7 @@ jdk:
 language: scala
 script:
   - '[ "$TRAVIS_PULL_REQUEST" != false ] || export SBT_OPTS=-Dbuild.version=${TRAVIS_TAG:-$TRAVIS_BRANCH-SNAPSHOT}'
-  - sbt 'all compile doc:compile scripted scalafmt::test test:scalafmt::test'
+  - sbt 'all compile doc:compile scalafmt::test' scripted
   - |
     if [ "$TRAVIS_SECURE_ENV_VARS" == true ]; then
       echo "$PGP_SECRET" | base64 --decode | gpg --import
