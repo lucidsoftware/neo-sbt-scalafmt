@@ -19,7 +19,11 @@ inScope(Global)(Seq(
   version := sys.props.getOrElse("build.version", "0-SNAPSHOT")
 ))
 
-scalafmtVersion in ThisBuild := "1.0.0-RC2"
+
+inThisBuild(Seq(
+  scalafmtOnCompile := true,
+  scalafmtVersion := "1.0.0-RC2"
+))
 
 lazy val `scalafmt-api` = project
 
