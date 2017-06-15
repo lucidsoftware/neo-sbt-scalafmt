@@ -160,13 +160,14 @@ object ScalafmtCorePlugin extends AutoPlugin {
 
             lazy val scalafmtter = scalafmtCache.value(classpath)
             lazy val config = scalafmtter.config(configString)
+            val shouldIgnore = ignoreErrors.value
             val newInfo = updatedInfo.map(_.left.flatMap {
               updatedInfo =>
                 val c = config
                 val input = IO.read(updatedInfo.file)
                 val output = try scalafmtter.format(c, input)
                 catch {
-                  case NonFatal(e) =>
+                  case NonFatal(e) if shouldIgnore =>
                     logger.warn(e.getLocalizedMessage.replace("<input>", updatedInfo.file.toString))
                     input
                 }
