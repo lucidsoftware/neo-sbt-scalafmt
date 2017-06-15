@@ -214,10 +214,10 @@ object ScalafmtCorePlugin extends AutoPlugin {
       val sVersion = scalafmtVersion.value.split("\\.", -1).toSeq match {
         case "0" +: "6" +: _ => "0.6"
         case "0" +: "7" +: _ => "0.7"
-        case "1" +: "0" +: _ => "1.0"
+        case "1" +: "0" +: _ => "0.7"
         case _ =>
           println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}")
-          "1.0"
+          "0.7"
       }
       val version = if (BuildInfo.version.endsWith("-SNAPSHOT")) {
         s"${BuildInfo.version.stripSuffix("-SNAPSHOT")}-$sVersion-SNAPSHOT"
