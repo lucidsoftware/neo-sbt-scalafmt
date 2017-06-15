@@ -5,7 +5,7 @@
 
 A SBT plugin for Scalafmt that
 
-* supports SBT 0.13 and 1.0.0-M5
+* supports SBT 0.13 and 1.0.0-M6
 * supports Scalafmt 0.6, 0.7, and 1.0
 * runs in-process
 * uses SBT's ivy2 for dependency resolution
