@@ -64,4 +64,8 @@ lazy val `sbt-scalafmt` = project.dependsOn(`scalafmt-api`).settings(
   })
 ).cross(sbtVersionAxis)
 lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.15")
+  .settings(scriptedSettings)
+  .settings(
+    scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
+  )
 lazy val `sbt-scalafmt_1.0.0-M6` = `sbt-scalafmt`("1.0.0-M6")
