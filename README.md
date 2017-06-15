@@ -50,8 +50,7 @@ scalafmtVersion in ThisBuild := "1.0.0-RC2" // all projects
 scalafmtVersion := "1.0.0-RC2"              // current project
 ```
 
-As of 1.0, ScalafmtPlugin is enabled automatically, but does not run scalafmt automatically. To run scalafmt
-automatically before compiling.
+To run scalafmt automatically before compiling.
 
 ```scala
 scalafmtOnCompile in ThisBuild := true // all projects
@@ -67,14 +66,23 @@ ignoreErrors in scalafmt := false              // current project
 ignoreErrors in (Compile, scalafmt) := false   // current project, specific configuration
 ```
 
-`ScalafmtCorePlugin` defines most of the settings. `ScalaPlugin` applies them to the compile and test configurations.
-To apply them to additional configurations
+The scalafmt task is defined by default for the compile and test configurations. To define it for additional
+configurations, e.g. `Integration`,
 
 ```scala
 inConfig(Integration)(scalafmtSettings)
+```
+
+To disable this plugin for a project
+
+```scala
+disablePlugins(ScalafmtCorePlugin)
 ```
 
 ## Implementation details
 
 Scalafmt artifacts are downloaded with a scalafmt Ivy configuration added to each project. Scalafmt classes are loaded
 in a separate classloader, allowing them work regardless of the Scala version of SBT.
+
+`ScalafmtCorePlugin` adds the Ivy configuration and scalafmt dependency. `ScalafmtPlugin` creates the scalafmt task for
+compile and test configurations.
