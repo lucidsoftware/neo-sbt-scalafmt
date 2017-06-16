@@ -1,7 +1,7 @@
 package com.lucidchart.sbt.scalafmt
 
 import com.google.common.cache._
-import com.lucidchart.scalafmt.api.Scalafmtter
+import com.lucidchart.scalafmt.api.{Dialect, ScalafmtFactory}
 import java.io.FileNotFoundException
 import java.util.Arrays
 import sbt.KeyRanks._
@@ -20,14 +20,16 @@ object ScalafmtCorePlugin extends AutoPlugin {
 
     val scalafmt = TaskKey[Unit]("scalafmt", "Format Scala sources", ATask)
     val scalafmtBridge = SettingKey[ModuleID]("scalafmt-bridge", "scalafmt-impl dependency", BMinusSetting)
-    val scalafmtCache = SettingKey[Seq[File] => Scalafmtter]("scalafmtCache", "Cache of Scalafmt instances", DSetting)
-    val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], Class[_ <: Scalafmtter]]](
+    val scalafmtCache =
+      SettingKey[Seq[File] => ScalafmtFactory]("scalafmtCache", "Cache of Scalafmt instances", DSetting)
+    val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], ScalafmtFactory]](
       "scalafmt-cache-builder",
       "CacheBuilder for Scalafmt cache",
       CSetting
     )
     val scalafmtConfig = TaskKey[File]("scalafmt-config", "Scalafmt config file", BTask)
-    val scalafmtOnCompile = TaskKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BTask)
+    val scalafmtDialect = SettingKey[Dialect]("scalafmt-dialect", "Dialect of Scala sources", BSetting)
+    val scalafmtOnCompile = SettingKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BTask)
     // A better way is to put things in a sbt-scalafmt-ivy plugin, but this stuff is currently in flux.
     val scalafmtUseIvy = SettingKey[Boolean]("scalafmt-use-ivy", "Use sbt's Ivy resolution", CSetting)
     val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmt version", AMinusSetting)
@@ -47,15 +49,15 @@ object ScalafmtCorePlugin extends AutoPlugin {
     private[this] val scalafmtter = Def.task {
       val classpath = externalDependencyClasspath.value
       val cache = scalafmtCache.value
+      val dialect = scalafmtDialect.value
       val ignoreErrors = this.ignoreErrors.value
       val logger = streams.value.log
       (configString: String) =>
         {
-          val scalafmtter = cache(classpath.map(_.data))
-          val config = scalafmtter.config(configString)
+          val scalafmtter = cache(classpath.map(_.data)).fromConfig(configString)(dialect)
           (name: String, input: String) =>
             {
-              try scalafmtter.format(config, input)
+              try scalafmtter.format(input)
               catch {
                 case NonFatal(e) if ignoreErrors =>
                   val exceptionMesssage = e.getLocalizedMessage
@@ -71,19 +73,13 @@ object ScalafmtCorePlugin extends AutoPlugin {
         }
     }
 
-    val scalafmtSettings: Seq[Def.Setting[_]] =
+    val scalafmtCoreSettings: Seq[Def.Setting[_]] =
       Seq(
-        compileInputs in compile := Def.taskDyn {
-          val task = if (scalafmtOnCompile.value) scalafmt in resolvedScoped.value.scope else Def.task(())
-          val previousInputs = (compileInputs in compile).value
-          task.map(_ => previousInputs)
-        }.value,
         externalDependencyClasspath in scalafmt := (externalDependencyClasspath in Scalafmt).value,
         scalafmt := (scalafmt in scalafmt).value
       ) ++ inTask(scalafmt)(
         Seq(
           clean := IO.delete(streams.value.cacheDirectory),
-          sourceDirectories := Seq(scalaSource.value),
           scalafmt := {
             val logger = streams.value.log
             val display = SbtUtil.display(thisProjectRef.value, configuration.value)
@@ -164,23 +160,39 @@ object ScalafmtCorePlugin extends AutoPlugin {
           }
         )
       )
+
+    val scalafmtSettings = scalafmtCoreSettings ++
+      Seq(
+        compileInputs in compile := Def.taskDyn {
+          val task = if (scalafmtOnCompile.value) scalafmt in resolvedScoped.value.scope else Def.task(())
+          val previousInputs = (compileInputs in compile).value
+          task.map(_ => previousInputs)
+        }.value
+      ) ++
+      inTask(scalafmt)(
+        Seq(
+          scalafmtDialect := Dialect.SCALA,
+          sourceDirectories := Seq(scalaSource.value)
+        )
+      )
+
   }
   import autoImport._
 
   override val buildSettings = Seq(
     ignoreErrors := true,
     scalafmtCache := {
-      val cache = scalafmtCacheBuilder.value.build(new CacheLoader[Seq[File], Class[_ <: Scalafmtter]] {
-        def load(classpath: Seq[File]) = {
-          val classLoader =
-            new BridgeClassLoader(classpath.map(_.toURI.toURL))(!_.startsWith("com.lucidchart.scalafmt.api."))
-          classLoader.loadClass("com.lucidchart.scalafmt.impl.Scalafmtter").asInstanceOf[Class[_ <: Scalafmtter]]
-        }
+      val cache = scalafmtCacheBuilder.value.build(new CacheLoader[Seq[File], ScalafmtFactory] {
+        def load(classpath: Seq[File]) =
+          new BridgeClassLoader(classpath.map(_.toURI.toURL))(!_.startsWith("com.lucidchart.scalafmt.api."))
+            .loadClass("com.lucidchart.scalafmt.impl.ScalafmtFactory")
+            .asInstanceOf[Class[_ <: ScalafmtFactory]]
+            .newInstance
       })
-      cache.get(_).newInstance
+      cache.get
     },
     scalafmtCacheBuilder := CacheBuilder.newBuilder
-      .asInstanceOf[CacheBuilder[Seq[File], Class[_ <: Scalafmtter]]]
+      .asInstanceOf[CacheBuilder[Seq[File], ScalafmtFactory]]
       .maximumSize(3),
     scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
     scalafmtOnCompile := false,
@@ -212,18 +224,18 @@ object ScalafmtCorePlugin extends AutoPlugin {
     scalafmtBridge := {
       val sVersion = scalafmtVersion.value.split("\\.", -1).toSeq match {
         case "0" +: "6" +: _ => "0.6"
-        case "0" +: "7" +: _ => "0.7"
-        case "1" +: "0" +: _ => "0.7"
+        case "0" +: "7" +: _ => "1.0"
+        case "1" +: "0" +: _ => "1.0"
         case _ =>
           println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}")
-          "0.7"
+          "1.0"
       }
       val version = if (BuildInfo.version.endsWith("-SNAPSHOT")) {
         s"${BuildInfo.version.stripSuffix("-SNAPSHOT")}-$sVersion-SNAPSHOT"
       } else {
         s"${BuildInfo.version}-$sVersion"
       }
-      "com.lucidchart" % s"scalafmt-impl" % version
+      "com.lucidchart" % s"scalafmt-impl_2.11" % version
     },
     scalafmtUseIvy := true
   )
