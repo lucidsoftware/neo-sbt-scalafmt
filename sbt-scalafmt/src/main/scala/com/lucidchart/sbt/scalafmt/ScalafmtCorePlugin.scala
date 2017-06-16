@@ -222,20 +222,19 @@ object ScalafmtCorePlugin extends AutoPlugin {
       }
     },
     scalafmtBridge := {
-      val sVersion = scalafmtVersion.value.split("\\.", -1).toSeq match {
-        case "0" +: "6" +: _ => "0.6"
-        case "0" +: "7" +: _ => "1.0"
-        case "1" +: "0" +: _ => "1.0"
+      val (scalaBinaryVersion, fmtVersion) = "(\\d+.){0,1}\\d+".r.findPrefixOf(scalafmtVersion.value) match {
+        case Some("0.6")         => ("2.11", "0.6")
+        case Some("0.7" | "1.0") => ("2.12", "1.0")
         case _ =>
-          println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}")
+          println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}; using 1.0 interface")
           "1.0"
       }
       val version = if (BuildInfo.version.endsWith("-SNAPSHOT")) {
-        s"${BuildInfo.version.stripSuffix("-SNAPSHOT")}-$sVersion-SNAPSHOT"
+        s"${BuildInfo.version.stripSuffix("-SNAPSHOT")}-$fmtVersion-SNAPSHOT"
       } else {
-        s"${BuildInfo.version}-$sVersion"
+        s"${BuildInfo.version}-$fmtVersion"
       }
-      "com.lucidchart" % s"scalafmt-impl_2.11" % version
+      "com.lucidchart" % s"scalafmt-impl_$scalaBinaryVersion" % version
     },
     scalafmtUseIvy := true
   )
