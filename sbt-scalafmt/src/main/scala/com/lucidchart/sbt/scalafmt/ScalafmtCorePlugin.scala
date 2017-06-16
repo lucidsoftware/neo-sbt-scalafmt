@@ -170,7 +170,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
     scalafmtCache := {
       val cache = scalafmtCacheBuilder.value.build(new CacheLoader[Seq[File], Class[_ <: Scalafmtter]] {
         def load(classpath: Seq[File]) = {
-          val classLoader = new ScalafmtClassLoader(classpath)
+          val classLoader =
+            new BridgeClassLoader(classpath.map(_.toURI.toURL))(!_.startsWith("com.lucidchart.scalafmt.api."))
           classLoader.loadClass("com.lucidchart.scalafmt.impl.Scalafmtter").asInstanceOf[Class[_ <: Scalafmtter]]
         }
       })
