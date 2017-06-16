@@ -18,6 +18,12 @@ object CachePlatform {
   def writeFileInfo(cache: File, value: Set[HashModifiedFileInfo]) = CacheIO.toFile(value)(cache)
 }
 
+object CommandPlatform {
+
+  val CommandStrings = sbt.CommandStrings
+
+}
+
 object LibraryPlatform {
   def withOverrideScalaVersion(ivyScala: IvyScala, value: Boolean) = ivyScala.copy(overrideScalaVersion = value)
 }
