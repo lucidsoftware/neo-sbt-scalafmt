@@ -3,12 +3,12 @@
 [![Build Status](https://travis-ci.org/lucidsoftware/neo-sbt-scalafmt.svg)](https://travis-ci.org/lucidsoftware/neo-sbt-scalafmt)
 [![Maven Version](https://img.shields.io/maven-central/v/com.lucidchart/scalafmt-api.svg)](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.lucidchart%22%20AND%20a%3A%22scalafmt-api%22)
 
-A SBT plugin for Scalafmt that
+An sbt plugin for [Scalafmt](http://scalameta.org/scalafmt/) that
 
-* supports SBT 0.13 and 1.0.0-M6
+* supports sbt 0.13 and 1.0.0-M6
 * supports Scalafmt 0.6, 0.7, and 1.0
 * runs in-process
-* uses SBT's ivy2 for dependency resolution
+* uses sbt's ivy2 for dependency resolution
 
 ## Usage
 
@@ -82,7 +82,7 @@ disablePlugins(ScalafmtCorePlugin)
 ## Implementation details
 
 Scalafmt artifacts are downloaded with a scalafmt Ivy configuration added to each project. Scalafmt classes are loaded
-in a separate classloader, allowing them work regardless of the Scala version of SBT.
+in a separate classloader, allowing them work regardless of the Scala version of sbt.
 
 `ScalafmtCorePlugin` adds the Ivy configuration and scalafmt dependency. `ScalafmtPlugin` creates the scalafmt task for
 compile and test configurations.
