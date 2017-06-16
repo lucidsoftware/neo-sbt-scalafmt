@@ -45,29 +45,28 @@ lazy val sbtVersionAxis = new DefaultAxis {
     val newDelegate = super.apply(delegate, version)
     newDelegate.withProject(newDelegate.project.settings(
       Keys.name := Keys.name.value.dropRight(major(version).size + 1),
-      sbtVersion := version
+      sbtVersion := version,
+      scalaCompilerBridgeSource :=
+        xsbti.ArtifactInfo.SbtOrganization % "compiler-interface" % (sbtVersion in ThisBuild).value % "component" sources(),
+      sbtBinaryVersion := CrossVersion.binarySbtVersion(sbtVersion.value),
+      sbtDependency := {
+        val app = appConfiguration.value
+        val id = app.provider.id
+        val scalaVersion = app.provider.scalaProvider.version
+        val binVersion = binaryScalaVersion(scalaVersion)
+        val cross = if (id.crossVersioned) CrossVersion.binary else CrossVersion.Disabled
+        val base = ModuleID(id.groupID, id.name, sbtVersion.value, crossVersion = cross)
+        CrossVersion(scalaVersion, binVersion)(base).copy(crossVersion = CrossVersion.Disabled)
+      },
+      scalaVersion := (sbtVersion.value match {
+        case version if version.startsWith("0.13.") => "2.10.6"
+        case version if version.startsWith("1.0.") => "2.12.2"
+      })
     ))
   }
 }
 
-lazy val `sbt-scalafmt` = project.dependsOn(`scalafmt-api`).settings(
-  scalaCompilerBridgeSource :=
-    xsbti.ArtifactInfo.SbtOrganization % "compiler-interface" % (sbtVersion in ThisBuild).value % "component" sources(),
-  sbtBinaryVersion := CrossVersion.binarySbtVersion(sbtVersion.value),
-  sbtDependency := {
-    val app = appConfiguration.value
-    val id = app.provider.id
-    val scalaVersion = app.provider.scalaProvider.version
-    val binVersion = binaryScalaVersion(scalaVersion)
-    val cross = if (id.crossVersioned) CrossVersion.binary else CrossVersion.Disabled
-    val base = ModuleID(id.groupID, id.name, sbtVersion.value, crossVersion = cross)
-    CrossVersion(scalaVersion, binVersion)(base).copy(crossVersion = CrossVersion.Disabled)
-  },
-  scalaVersion := (sbtVersion.value match {
-    case version if version.startsWith("0.13.") => "2.10.6"
-    case version if version.startsWith("1.0.") => "2.12.2"
-  })
-).cross(sbtVersionAxis)
+lazy val `sbt-scalafmt` = project.dependsOn(`scalafmt-api`).cross(sbtVersionAxis)
 lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.15")
   .settings(scriptedSettings)
   .settings(
@@ -79,3 +78,7 @@ lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.15")
     scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
   )
 lazy val `sbt-scalafmt_1.0.0-M6` = `sbt-scalafmt`("1.0.0-M6")
+
+lazy val `sbt-scalafmt-coursier` = project.cross(sbtVersionAxis).dependsOn(`sbt-scalafmt`)
+lazy val `sbt-scalafmt-coursier_0.13` = `sbt-scalafmt-coursier`("0.13.15")
+lazy val `sbt-scalafmt-coursier_1.0.0-M6` = `sbt-scalafmt-coursier`("1.0.0-M6")

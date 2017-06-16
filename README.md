@@ -33,6 +33,17 @@ If you want to ensure everything is formatted, and fail if it is not (e.g. as a 
 > test:scalafmt::test # check test sources
 ```
 
+### Coursier (beta)
+
+Scalafmt can be fetched with [coursier](https://github.com/coursier/coursier). Replace sbt-scalafmt with
+
+```
+addSbtPlugin("com.lucidchart" % "sbt-scalafmt-coursier" % "<version>")
+```
+
+If you use already sbt-coursier, you should use sbt-scalafmt-coursier to avoid scala-library
+[version issues](https://github.com/coursier/coursier/issues/543).
+
 ## Additional configuration
 
 By default, `.scalafmt.conf` is used for Scalafmt configuration. To choose another location
@@ -84,5 +95,6 @@ disablePlugins(ScalafmtCorePlugin)
 Scalafmt artifacts are downloaded with a scalafmt Ivy configuration added to each project. Scalafmt classes are loaded
 in a separate classloader, allowing them work regardless of the Scala version of sbt.
 
-`ScalafmtCorePlugin` adds the Ivy configuration and scalafmt dependency. `ScalafmtPlugin` creates the scalafmt task for
-compile and test configurations.
+* `ScalafmtCorePlugin` adds the Ivy configuration and scalafmt dependency.
+* `ScalafmtCoursierPlugin` replaces the sbt ivy configuration with coursier.
+* `ScalafmtPlugin` creates the scalafmt task for compile and test configurations.

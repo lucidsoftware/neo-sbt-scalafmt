@@ -28,6 +28,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
     )
     val scalafmtConfig = TaskKey[File]("scalafmt-config", "Scalafmt config file", BTask)
     val scalafmtOnCompile = TaskKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BTask)
+    // A better way is to put things in a sbt-scalafmt-ivy plugin, but this stuff is currently in flux.
+    val scalafmtUseIvy = SettingKey[Boolean]("scalafmt-use-ivy", "Use sbt's Ivy resolution", CSetting)
     val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmt version", AMinusSetting)
 
     private[this] val scalafmtConfigString = Def.task {
@@ -76,11 +78,11 @@ object ScalafmtCorePlugin extends AutoPlugin {
           val previousInputs = (compileInputs in compile).value
           task.map(_ => previousInputs)
         }.value,
+        externalDependencyClasspath in scalafmt := (externalDependencyClasspath in Scalafmt).value,
         scalafmt := (scalafmt in scalafmt).value
       ) ++ inTask(scalafmt)(
         Seq(
           clean := IO.delete(streams.value.cacheDirectory),
-          externalDependencyClasspath := Classpaths.managedJars(Scalafmt, classpathTypes.value, update.value),
           sourceDirectories := Seq(scalaSource.value),
           scalafmt := {
             val logger = streams.value.log
@@ -186,14 +188,27 @@ object ScalafmtCorePlugin extends AutoPlugin {
   )
 
   override val projectSettings = Seq(
+    externalDependencyClasspath in Scalafmt := Classpaths.managedJars(Scalafmt, classpathTypes.value, update.value),
     includeFilter in scalafmt := "*.scala",
-    ivyConfigurations += Scalafmt,
-    ivyScala := ivyScala.value
-      .map(LibraryPlatform.withOverrideScalaVersion(_, false)), // otherwise scala-library conflicts
-    libraryDependencies ++= Seq(
-      "com.geirsson" % "scalafmt-core_2.11" % scalafmtVersion.value % Scalafmt,
-      scalafmtBridge.value % Scalafmt
-    ),
+    ivyConfigurations ++= (if (scalafmtUseIvy.value) Seq(Scalafmt) else Seq.empty),
+    ivyScala := {
+      if (scalafmtUseIvy.value) {
+        // otherwise scala-library conflicts
+        ivyScala.value.map(LibraryPlatform.withOverrideScalaVersion(_, false))
+      } else {
+        ivyScala.value
+      }
+    },
+    libraryDependencies ++= {
+      if (scalafmtUseIvy.value) {
+        Seq(
+          "com.geirsson" % "scalafmt-core_2.11" % scalafmtVersion.value % Scalafmt,
+          scalafmtBridge.value % Scalafmt
+        )
+      } else {
+        Seq.empty
+      }
+    },
     scalafmtBridge := {
       val sVersion = scalafmtVersion.value.split("\\.", -1).toSeq match {
         case "0" +: "6" +: _ => "0.6"
@@ -209,7 +224,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
         s"${BuildInfo.version}-$sVersion"
       }
       "com.lucidchart" % s"scalafmt-impl" % version
-    }
+    },
+    scalafmtUseIvy := true
   )
 
   override val requires = IvyPlugin && JvmPlugin
