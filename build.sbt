@@ -29,7 +29,8 @@ lazy val `scalafmt-api` = project
 
 lazy val localScalafmtVersion = settingKey[String]("Scalafmt version")
 
-lazy val `scalafmt-impl` = project.dependsOn(`scalafmt-api`).cross(new LibraryVersionAxis("scalafmt", localScalafmtVersion, _.split("\\.").take(2).mkString(".")))
+lazy val `scalafmt-impl` = project.dependsOn(`scalafmt-api` % Provided.name)
+  .cross(new LibraryVersionAxis("scalafmt", localScalafmtVersion, _.split("\\.").take(2).mkString(".")))
 lazy val `scalafmt-impl-0.6` = `scalafmt-impl`("0.6.8").settings(
   scalaVersion := "2.11.8"
 )
