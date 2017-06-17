@@ -24,13 +24,9 @@ object ScalafmtCoursierPlugin extends AutoPlugin {
 
   override val projectSettings = Seq(
     externalDependencyClasspath in Scalafmt := {
-      val dependencies = {
-        val bridge = scalafmtBridge.value
-        Set(
-          Dependency(Module("com.geirsson", "scalafmt-core_2.11"), scalafmtVersion.value),
-          Dependency(Module(bridge.organization, bridge.name), bridge.revision)
-        )
-      }
+      val dependencies = (libraryDependencies in Scalafmt).value
+        .map(module => Dependency(Module(module.organization, module.name), module.revision))
+        .toSet
       val cacheFile = streams.value.cacheDirectory / "dependencies"
       val newHash = dependencies.hashCode
       val cached = try {

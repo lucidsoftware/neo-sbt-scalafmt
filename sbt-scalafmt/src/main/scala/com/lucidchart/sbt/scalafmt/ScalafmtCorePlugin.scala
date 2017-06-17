@@ -19,7 +19,6 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val ignoreErrors = TaskKey[Boolean]("ignore-errors", "Ignore errors for a task", BTask)
 
     val scalafmt = TaskKey[Unit]("scalafmt", "Format Scala sources", ATask)
-    val scalafmtBridge = SettingKey[ModuleID]("scalafmt-bridge", "scalafmt-impl dependency", BMinusSetting)
     val scalafmtCache =
       SettingKey[Seq[File] => ScalafmtFactory]("scalafmtCache", "Cache of Scalafmt instances", DSetting)
     val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], ScalafmtFactory]](
@@ -211,17 +210,9 @@ object ScalafmtCorePlugin extends AutoPlugin {
         ivyScala.value
       }
     },
-    libraryDependencies ++= {
-      if (scalafmtUseIvy.value) {
-        Seq(
-          "com.geirsson" % "scalafmt-core_2.11" % scalafmtVersion.value % Scalafmt,
-          scalafmtBridge.value % Scalafmt
-        )
-      } else {
-        Seq.empty
-      }
-    },
-    scalafmtBridge := {
+    libraryDependencies ++=
+      (if (scalafmtUseIvy.value) (libraryDependencies in Scalafmt).value.map(_ % Scalafmt) else Seq.empty),
+    libraryDependencies in Scalafmt := {
       val (scalaBinaryVersion, fmtVersion) = "(\\d+.){0,1}\\d+".r.findPrefixOf(scalafmtVersion.value) match {
         case Some("0.6")         => ("2.11", "0.6")
         case Some("0.7" | "1.0") => ("2.12", "1.0")
@@ -234,7 +225,10 @@ object ScalafmtCorePlugin extends AutoPlugin {
       } else {
         s"${BuildInfo.version}-$fmtVersion"
       }
-      "com.lucidchart" % s"scalafmt-impl_$scalaBinaryVersion" % version
+      Seq(
+        "com.geirsson" % s"scalafmt-core_$scalaBinaryVersion" % scalafmtVersion.value,
+        "com.lucidchart" % s"scalafmt-impl_$scalaBinaryVersion" % version
+      )
     },
     scalafmtUseIvy := true
   )
