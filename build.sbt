@@ -28,7 +28,7 @@ inScope(Global)(
 
 inThisBuild(
   Seq(
-    scalafmtOnCompile := true,
+    scalafmtOnCompile := sys.props.get("scalafmtOnCompile") != Some("false"),
     scalafmtVersion := "1.0.0-RC2"
   )
 )
