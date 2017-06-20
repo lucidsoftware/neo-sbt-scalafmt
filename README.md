@@ -33,7 +33,7 @@ If you want to ensure everything is formatted, and fail if it is not (e.g. as a 
 ```
 > scalafmt::test      # check compile sources
 > test:scalafmt::test # check test sources
-> sbt:scalafmt        # check .sbt sources
+> sbt:scalafmt::test  # check .sbt sources
 ```
 
 ### Coursier (beta)
