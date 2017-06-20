@@ -16,11 +16,14 @@ An sbt plugin for [Scalafmt](http://scalameta.org/scalafmt/) that
 In `project/plugins.sbt`,
 
 ```scala
-addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "<version>")
 // see the Maven badge at the top of this README for the latest version
+
+addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "<version>")
+// if you use coursier, you must use sbt-scalafmt-coursier to avoid a bug
+// addSbtPlugin("com.lucidchart" % "sbt-scalafmt-coursier" % "<version>")
 ```
 
-Then
+then
 
 ```
 > scalafmt       # format compile sources
@@ -35,17 +38,6 @@ If you want to ensure everything is formatted, and fail if it is not (e.g. as a 
 > test:scalafmt::test # check test sources
 > sbt:scalafmt        # check .sbt sources
 ```
-
-### Coursier (beta)
-
-Scalafmt can be fetched with [coursier](https://github.com/coursier/coursier). Replace sbt-scalafmt with
-
-```
-addSbtPlugin("com.lucidchart" % "sbt-scalafmt-coursier" % "<version>")
-```
-
-If you use already sbt-coursier, you should use sbt-scalafmt-coursier to avoid scala-library
-[version issues](https://github.com/coursier/coursier/issues/543).
 
 ## Additional configuration
 
