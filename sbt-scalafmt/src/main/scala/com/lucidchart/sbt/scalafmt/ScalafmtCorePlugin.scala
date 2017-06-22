@@ -1,7 +1,7 @@
 package com.lucidchart.sbt.scalafmt
 
 import com.google.common.cache._
-import com.lucidchart.scalafmt.api.{Dialect, ScalafmtFactory}
+import com.lucidchart.scalafmt.api.{Dialect, ScalafmtFactory, Scalafmtter}
 import java.io.FileNotFoundException
 import java.util.Arrays
 import sbt.KeyRanks._
@@ -14,68 +14,66 @@ import scala.util.control.NonFatal
 object ScalafmtCorePlugin extends AutoPlugin {
 
   object autoImport {
+    case object UseScalafmtConfigFilter extends FileFilter {
+      def accept(file: File) = ???
+    }
+
     val Scalafmt = config("scalafmt").hide
 
     val ignoreErrors = TaskKey[Boolean]("ignore-errors", "Ignore errors for a task", BTask)
 
     val scalafmt = TaskKey[Unit]("scalafmt", "Format Scala sources", ATask)
     val scalafmtCache =
-      SettingKey[Seq[File] => ScalafmtFactory]("scalafmtCache", "Cache of Scalafmt instances", DSetting)
+      SettingKey[Seq[File] => ScalafmtFactory]("scalafmtCache", "Cache of Scalafmtter instances", DSetting)
     val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], ScalafmtFactory]](
       "scalafmt-cache-builder",
-      "CacheBuilder for Scalafmt cache",
+      "CacheBuilder for Scalafmtter cache",
       CSetting
     )
-    val scalafmtConfig = TaskKey[File]("scalafmt-config", "Scalafmt config file", BTask)
+    val scalafmtConfig = TaskKey[File]("scalafmt-config", "Scalafmtter config file", BTask)
     val scalafmtDialect = SettingKey[Dialect]("scalafmt-dialect", "Dialect of Scala sources", BSetting)
     val scalafmtOnCompile = SettingKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BTask)
     // A better way is to put things in a sbt-scalafmt-ivy plugin, but this stuff is currently in flux.
     val scalafmtUseIvy = SettingKey[Boolean]("scalafmt-use-ivy", "Use sbt's Ivy resolution", CSetting)
-    val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmt version", AMinusSetting)
+    val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmtter version", AMinusSetting)
+    val scalafmtter = TaskKey[Scalafmtter]("scalafmtter", "Scalafmt API")
 
-    private[this] val scalafmtConfigString = Def.task {
-      val file = scalafmtConfig.value
-      val logger = streams.value.log
-      () =>
-        try IO.read(file)
-        catch {
-          case _: FileNotFoundException =>
-            logger.debug(s"$file does not exist")
-            ""
-        }
-    }
-
-    private[this] val scalafmtter = Def.task {
-      val classpath = externalDependencyClasspath.value
-      val cache = scalafmtCache.value
-      val dialect = scalafmtDialect.value
+    private[this] val scalafmtFn = Def.task {
       val ignoreErrors = this.ignoreErrors.value
       val logger = streams.value.log
-      (configString: String) =>
+      val scalafmtter = autoImport.scalafmtter.value.formatter(scalafmtDialect.value)
+      (name: String, input: String) =>
         {
-          val scalafmtter = cache(classpath.map(_.data)).fromConfig(configString)(dialect)
-          (name: String, input: String) =>
-            {
-              try scalafmtter.format(input)
-              catch {
-                case NonFatal(e) if ignoreErrors =>
-                  val exceptionMesssage = e.getLocalizedMessage
-                  val message = if (exceptionMesssage.contains("<input>")) {
-                    exceptionMesssage.replace("<input>", name)
-                  } else {
-                    s"$name:\n$exceptionMesssage"
-                  }
-                  logger.warn(message)
-                  input
+          try scalafmtter(input)
+          catch {
+            case NonFatal(e) if ignoreErrors =>
+              val exceptionMesssage = e.getLocalizedMessage
+              val message = if (exceptionMesssage.contains("<input>")) {
+                exceptionMesssage.replace("<input>", name)
+              } else {
+                s"$name:\n$exceptionMesssage"
               }
-            }
+              logger.warn(message)
+              input
+          }
         }
     }
 
     val scalafmtCoreSettings: Seq[Def.Setting[_]] =
       Seq(
         externalDependencyClasspath in scalafmt := (externalDependencyClasspath in Scalafmt).value,
-        scalafmt := (scalafmt in scalafmt).value
+        scalafmt := (scalafmt in scalafmt).value,
+        scalafmtter := {
+          val file = scalafmtConfig.value
+          val logger = streams.value.log
+          val configString = try IO.read(file)
+          catch {
+            case _: FileNotFoundException =>
+              logger.debug(s"$file does not exist")
+              ""
+          }
+          scalafmtCache.value(externalDependencyClasspath.value.map(_.data)).fromConfig(configString)
+        }
       ) ++ inTask(scalafmt)(
         Seq(
           clean := IO.delete(streams.value.cacheDirectory),
@@ -86,9 +84,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
             val classpath = externalDependencyClasspath.value.map(_.data)
             val extraModified = (scalafmtConfig.value +: classpath).map(_.lastModified).max
 
-            lazy val configString = scalafmtConfigString.value()
-            lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(configString))
-            lazy val scalafmtter = this.scalafmtter.value(configString)
+            lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(scalafmtConfig.value))
 
             // It would be simpler to use SBT's built-in FileFunction or similar, but this offers better performance and
             // doesn't take that much more work.
@@ -115,6 +111,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
               logger.info(s"Formatting $message in $display ...")
             }
 
+            val scalafmtter = scalafmtFn.value
             val newInfo = updatedInfo.map(_.left.flatMap { updatedInfo =>
               val input = IO.read(updatedInfo.file)
               val output = scalafmtter(updatedInfo.file.toString, input)
@@ -132,7 +129,14 @@ object ScalafmtCorePlugin extends AutoPlugin {
 
             CachePlatform.writeFileInfo(cacheFile, newInfo.map(_.merge)(breakOut))
           },
-          sources := Defaults.collectFiles(sourceDirectories, includeFilter, excludeFilter).value
+          sources := Def.taskDyn {
+            includeFilter.value match {
+              case UseScalafmtConfigFilter =>
+                val directories = sourceDirectories.value
+                scalafmtter.map(scalafmtter => (directories ** new ScalafmtFileFilter(scalafmtter)).get)
+              case _ => Defaults.collectFiles(sourceDirectories, includeFilter, excludeFilter)
+            }
+          }.value
         )
       ) ++ inTask(scalafmt)(
         Seq(
@@ -144,7 +148,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
               logger.info(s"Checking formatting for $message in $display ...")
             }
 
-            val scalafmtter = this.scalafmtter.value(scalafmtConfigString.value())
+            val scalafmtter = scalafmtFn.value
             val differentCount = sources.value.count { file =>
               val content = IO.read(file)
               val hasChanges = content != scalafmtter(file.toString, content)
@@ -180,6 +184,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
 
   override val buildSettings = Seq(
     ignoreErrors := true,
+    includeFilter in scalafmt := UseScalafmtConfigFilter,
     scalafmtCache := {
       val cache = scalafmtCacheBuilder.value.build(new CacheLoader[Seq[File], ScalafmtFactory] {
         def load(classpath: Seq[File]) =
@@ -200,7 +205,6 @@ object ScalafmtCorePlugin extends AutoPlugin {
 
   override val projectSettings = Seq(
     externalDependencyClasspath in Scalafmt := Classpaths.managedJars(Scalafmt, classpathTypes.value, update.value),
-    includeFilter in scalafmt := "*.scala",
     ivyConfigurations ++= (if (scalafmtUseIvy.value) Seq(Scalafmt) else Seq.empty),
     ivyScala := {
       if (scalafmtUseIvy.value) {

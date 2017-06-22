@@ -39,6 +39,8 @@ If you want to ensure everything is formatted, and fail if it is not (e.g. as a 
 > sbt:scalafmt::test  # check .sbt sources
 ```
 
+As of 1.7, source file filters come from the Scalafmt configuration file.
+
 ## Additional configuration
 
 By default, `.scalafmt.conf` is used for Scalafmt configuration. To choose another location
