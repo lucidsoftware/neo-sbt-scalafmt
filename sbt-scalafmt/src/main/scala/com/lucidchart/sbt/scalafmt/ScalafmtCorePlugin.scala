@@ -10,6 +10,7 @@ import sbt._
 import sbt.plugins.{IvyPlugin, JvmPlugin}
 import scala.collection.breakOut
 import scala.util.control.NonFatal
+import scala.util.control.Exception.catching
 
 object ScalafmtCorePlugin extends AutoPlugin {
 
@@ -73,7 +74,12 @@ object ScalafmtCorePlugin extends AutoPlugin {
             val classpath = externalDependencyClasspath.value.map(_.data)
             val extraModified = (scalafmtConfig.value +: classpath).map(_.lastModified).max
 
-            lazy val extraHash = Hash(classpath.toArray.flatMap(Hash(_)) ++ Hash(scalafmtConfig.value))
+            lazy val extraHash = Hash(
+              classpath.toArray.flatMap(Hash(_)) ++
+                catching(classOf[FileNotFoundException])
+                  .opt(Hash(scalafmtConfig.value))
+                  .getOrElse(Array.emptyByteArray)
+            )
 
             // It would be simpler to use SBT's built-in FileFunction or similar, but this offers better performance and
             // doesn't take that much more work.
