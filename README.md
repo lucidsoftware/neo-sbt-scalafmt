@@ -66,6 +66,14 @@ scalafmtOnCompile := true              // current project
 scalafmtOnCompile in Compile := true   // current project, specific configuration
 ```
 
+To run scalafmt::test automatically before compiling (or before loading, in the case of sbt).
+
+```scala
+scalafmtTestOnCompile in ThisBuild := true // all projects
+scalafmtTestOnCompile := true              // current project
+scalafmtTestOnCompile in Compile := true   // current project, specific configuration
+```
+
 By default, scalafmt fails the build for any style issues. If you'd prefer warnings instead: 
 
 ```scala
