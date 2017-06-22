@@ -62,18 +62,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtCoreSettings: Seq[Def.Setting[_]] =
       Seq(
         externalDependencyClasspath in scalafmt := (externalDependencyClasspath in Scalafmt).value,
-        scalafmt := (scalafmt in scalafmt).value,
-        scalafmtter := {
-          val file = scalafmtConfig.value
-          val logger = streams.value.log
-          val configString = try IO.read(file)
-          catch {
-            case _: FileNotFoundException =>
-              logger.debug(s"$file does not exist")
-              ""
-          }
-          scalafmtCache.value(externalDependencyClasspath.value.map(_.data)).fromConfig(configString)
-        }
+        scalafmt := (scalafmt in scalafmt).value
       ) ++ inTask(scalafmt)(
         Seq(
           clean := IO.delete(streams.value.cacheDirectory),
@@ -128,6 +117,17 @@ object ScalafmtCorePlugin extends AutoPlugin {
             }
 
             CachePlatform.writeFileInfo(cacheFile, newInfo.map(_.merge)(breakOut))
+          },
+          scalafmtter := {
+            val file = scalafmtConfig.value
+            val logger = streams.value.log
+            val configString = try IO.read(file)
+            catch {
+              case _: FileNotFoundException =>
+                logger.debug(s"$file does not exist")
+                ""
+            }
+            scalafmtCache.value(externalDependencyClasspath.value.map(_.data)).fromConfig(configString)
           },
           sources := Def.taskDyn {
             includeFilter.value match {

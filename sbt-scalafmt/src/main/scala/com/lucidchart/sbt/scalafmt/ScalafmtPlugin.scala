@@ -10,10 +10,20 @@ object ScalafmtPlugin extends AutoPlugin {
     inConfig(Compile)(
       inTask(scalafmt)(
         Seq(
-          sources ++= {
-            val finder = (baseDirectory.value * includeFilter.value) --- (baseDirectory.value * excludeFilter.value)
-            if (sourcesInBase.value) finder.get else Seq.empty
-          }
+          sources ++= Def
+            .taskDyn[Seq[File]] {
+              if (!sourcesInBase.value) {
+                Def.task(Seq.empty[File])
+              } else if (includeFilter.value == UseScalafmtConfigFilter) {
+                val directories = sourceDirectories.value
+                scalafmtter.map(scalafmtter => (directories ** new ScalafmtFileFilter(scalafmtter)).get)
+              } else {
+                (baseDirectory, includeFilter, excludeFilter).map(
+                  (base, include, exclude) => (base * include --- base * exclude).get
+                )
+              }
+            }
+            .value
         )
       )
     )
