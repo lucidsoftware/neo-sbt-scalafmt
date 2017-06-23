@@ -38,6 +38,11 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtUseIvy = SettingKey[Boolean]("scalafmt-use-ivy", "Use sbt's Ivy resolution", CSetting)
     val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmtter version", AMinusSetting)
     val scalafmtter = TaskKey[Scalafmtter]("scalafmtter", "Scalafmt API")
+    val scalafmtFailTest = SettingKey[Boolean](
+      "scalafmt-Fail-Test",
+      "Fail build when one or more style issues are found",
+      CSetting
+    )
 
     private[this] val scalafmtFn = Def.task {
       val ignoreErrors = this.ignoreErrors.value
@@ -155,16 +160,21 @@ object ScalafmtCorePlugin extends AutoPlugin {
             }
 
             val scalafmtter = scalafmtFn.value
+            val failForStyleIssues = scalafmtFailTest.value
             val differentCount = sources.value.count { file =>
               val content = IO.read(file)
               val hasChanges = content != scalafmtter(file.toString, content)
               if (hasChanges) {
-                logger.error(s"$file has changes after scalafmt")
+                val msg = s"$file has changes after scalafmt"
+                if (failForStyleIssues) logger.error(msg)
+                else logger.warn(msg)
               }
               hasChanges
             }
             AnalysisPlatform.counted("Scala source", "", "s", differentCount).foreach { message =>
-              throw new ScalafmtCheckFailure(s"$message not formatted in $display")
+              val msg = s"$message not formatted in $display"
+              if (failForStyleIssues) throw new ScalafmtCheckFailure(s"$message not formatted in $display")
+              else logger.warn(msg)
             }
           }
         )
@@ -206,7 +216,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
       .maximumSize(3),
     scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
     scalafmtOnCompile := false,
-    scalafmtVersion := "0.6.8"
+    scalafmtVersion := "0.6.8",
+    scalafmtFailTest := true
   )
 
   override val projectSettings = Seq(

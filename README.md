@@ -66,6 +66,14 @@ scalafmtOnCompile := true              // current project
 scalafmtOnCompile in Compile := true   // current project, specific configuration
 ```
 
+By default, scalafmt fails the build for any style issues. If you'd prefer warnings instead: 
+
+```scala
+scalafmtFailTest in ThisBuild := false // all projects
+scalafmtFailTest := false              // current project
+scalafmtFailTest in Compile := false   // current project, specific configuration
+```
+
 Most scalafmt errors do not fail the scalafmt task. To fail the task for any scalafmt errors.
 
 ```scala
