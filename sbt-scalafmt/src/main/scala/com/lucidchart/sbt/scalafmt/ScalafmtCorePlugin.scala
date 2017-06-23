@@ -34,6 +34,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtConfig = TaskKey[File]("scalafmt-config", "Scalafmtter config file", BTask)
     val scalafmtDialect = SettingKey[Dialect]("scalafmt-dialect", "Dialect of Scala sources", BSetting)
     val scalafmtOnCompile = SettingKey[Boolean]("scalafmt-on-compile", "Format source when compiling", BTask)
+    val scalafmtTestOnCompile =
+      SettingKey[Boolean]("scalafmt-test-on-compile", "Check source format when compiling", BTask)
     // A better way is to put things in a sbt-scalafmt-ivy plugin, but this stuff is currently in flux.
     val scalafmtUseIvy = SettingKey[Boolean]("scalafmt-use-ivy", "Use sbt's Ivy resolution", CSetting)
     val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmtter version", AMinusSetting)
@@ -183,7 +185,10 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtSettings = scalafmtCoreSettings ++
       Seq(
         compileInputs in compile := Def.taskDyn {
-          val task = if (scalafmtOnCompile.value) scalafmt in resolvedScoped.value.scope else Def.task(())
+          val task =
+            if (scalafmtOnCompile.value) scalafmt in resolvedScoped.value.scope
+            else if (scalafmtTestOnCompile.value) test in (resolvedScoped.value.scope in scalafmt.key)
+            else Def.task(())
           val previousInputs = (compileInputs in compile).value
           task.map(_ => previousInputs)
         }.value
@@ -216,6 +221,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
       .maximumSize(3),
     scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
     scalafmtOnCompile := false,
+    scalafmtTestOnCompile := false,
     scalafmtVersion := "0.6.8",
     scalafmtFailTest := true
   )
