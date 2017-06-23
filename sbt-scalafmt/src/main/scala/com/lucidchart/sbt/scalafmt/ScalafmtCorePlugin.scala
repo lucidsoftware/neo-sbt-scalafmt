@@ -38,8 +38,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtUseIvy = SettingKey[Boolean]("scalafmt-use-ivy", "Use sbt's Ivy resolution", CSetting)
     val scalafmtVersion = SettingKey[String]("scalafmt-version", "Scalafmtter version", AMinusSetting)
     val scalafmtter = TaskKey[Scalafmtter]("scalafmtter", "Scalafmt API")
-    val scalafmtFailBuildOnStyleIssue = SettingKey[Boolean](
-      "scalafmt-Fail-Build-On-Style-Issue",
+    val scalafmtFailTest = SettingKey[Boolean](
+      "scalafmt-Fail-Test",
       "Fail build when one or more style issues are found",
       CSetting
     )
@@ -160,7 +160,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
             }
 
             val scalafmtter = scalafmtFn.value
-            val failForStyleIssues = scalafmtFailBuildOnStyleIssue.value
+            val failForStyleIssues = scalafmtFailTest.value
             val differentCount = sources.value.count { file =>
               val content = IO.read(file)
               val hasChanges = content != scalafmtter(file.toString, content)
@@ -217,7 +217,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
     scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
     scalafmtOnCompile := false,
     scalafmtVersion := "0.6.8",
-    scalafmtFailBuildOnStyleIssue := true
+    scalafmtFailTest := true
   )
 
   override val projectSettings = Seq(
