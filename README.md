@@ -6,7 +6,7 @@
 An sbt plugin for [Scalafmt](http://scalameta.org/scalafmt/) that
 
 * formats .sbt and .scala files
-* supports SBT 0.13 and 1.0.0-M6
+* supports sbt 0.13 and 1.0.0-M6
 * supports Scalafmt 0.6 and 1.0
 * runs in-process
 * uses sbt's ivy2 for dependency resolution
@@ -19,7 +19,7 @@ In `project/plugins.sbt`,
 // see the Maven badge at the top of this README for the latest version
 
 addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "<version>")
-// if you use coursier, you must use sbt-scalafmt-coursier to avoid a bug
+// if you use coursier, you must use sbt-scalafmt-coursier
 // addSbtPlugin("com.lucidchart" % "sbt-scalafmt-coursier" % "<version>")
 ```
 
@@ -31,7 +31,7 @@ then
 > sbt:scalafmt   # format .sbt source
 ```
 
-If you want to ensure everything is formatted, and fail if it is not (e.g. as a CI step),
+To ensure everything is formatted, and fail if it is not (e.g. as a CI step),
 
 ```
 > scalafmt::test      # check compile sources
@@ -39,11 +39,10 @@ If you want to ensure everything is formatted, and fail if it is not (e.g. as a 
 > sbt:scalafmt::test  # check .sbt sources
 ```
 
-As of 1.7, source file filters come from the Scalafmt configuration file.
+## Scalafmt configuration
 
-## Additional configuration
-
-By default, `.scalafmt.conf` is used for Scalafmt configuration. To choose another location
+By default, `.scalafmt.conf` in the root project is used for Scalafmt configuration. If the file does not exist, the
+Scalafmt defaults are used. To choose another config file,
 
 ```scala
 scalafmtConfig in ThisBuild := file("other.scalafmt.conf") // all projects
@@ -58,7 +57,9 @@ scalafmtVersion in ThisBuild := "1.0.0-RC2" // all projects
 scalafmtVersion := "1.0.0-RC2"              // current project
 ```
 
-To run scalafmt automatically before compiling (or before loading, in the case of sbt).
+## Task configuration
+
+To run `scalafmt` automatically before compiling (or before loading, in the case of sbt).
 
 ```scala
 scalafmtOnCompile in ThisBuild := true // all projects
@@ -66,7 +67,7 @@ scalafmtOnCompile := true              // current project
 scalafmtOnCompile in Compile := true   // current project, specific configuration
 ```
 
-To run scalafmt::test automatically before compiling (or before loading, in the case of sbt).
+To run `scalafmt::test` automatically before compiling (or before loading, in the case of sbt).
 
 ```scala
 scalafmtTestOnCompile in ThisBuild := true // all projects
@@ -74,7 +75,7 @@ scalafmtTestOnCompile := true              // current project
 scalafmtTestOnCompile in Compile := true   // current project, specific configuration
 ```
 
-By default, scalafmt fails the build for any style issues. If you'd prefer warnings instead: 
+By default, `scalafmt::test` fails if sources are unformatted. If you'd prefer warnings instead: 
 
 ```scala
 scalafmtFailTest in ThisBuild := false // all projects
@@ -82,13 +83,16 @@ scalafmtFailTest := false              // current project
 scalafmtFailTest in Compile := false   // current project, specific configuration
 ```
 
-Most scalafmt errors do not fail the scalafmt task. To fail the task for any scalafmt errors.
+At the time of writing, Scalafmt fails on some valid inputs. By default, errors in Scalafmt itself do not fail the
+`scalafmt` task. To fail instead,
 
 ```scala
 ignoreErrors in (ThisBuild, scalafmt) := false // all projects
 ignoreErrors in scalafmt := false              // current project
 ignoreErrors in (Compile, scalafmt) := false   // current project, specific configuration
 ```
+
+## Additional configuration
 
 The scalafmt task is defined by default for the compile and test configurations. To define it for additional
 configurations, e.g. `Integration`,
@@ -103,10 +107,11 @@ To disable this plugin for a project
 disablePlugins(ScalafmtCorePlugin)
 ```
 
-## Formatting project/*.scala
+## Formatting build files
 
-If you wish to format Scala build files in project/, configure the meta-build, by adding sbt-scalafmt to
-project/project/plugins.sbt, and configuring it in project/plugins.sbt.
+If you wish to format project/*.scala files, configure the meta-build by adding sbt-scalafmt to
+project/project/plugins.sbt, and configuring it in project/plugins.sbt. See
+[sbt documentation](http://www.scala-sbt.org/0.13/docs/Organizing-Build.html).
 
 ## Implementation details
 
