@@ -111,7 +111,7 @@ disablePlugins(ScalafmtCorePlugin)
 
 If you wish to format project/*.scala files, configure the meta-build by adding sbt-scalafmt to
 project/project/plugins.sbt, and configuring it in project/plugins.sbt. See
-[sbt documentation](http://www.scala-sbt.org/0.13/docs/Organizing-Build.html).
+[sbt documentation](http://www.scala-sbt.org/0.13/docs/Organizing-Build.html) on meta-builds.
 
 ## Implementation details
 
