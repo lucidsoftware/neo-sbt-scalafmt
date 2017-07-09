@@ -245,7 +245,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
         case Some("0.7" | "1.0") => ("2.12", "1.0")
         case _ =>
           println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}; using 1.0 interface")
-          "1.0"
+          ("2.12", "1.0")
       }
       val version = if (BuildInfo.version.endsWith("-SNAPSHOT")) {
         s"${BuildInfo.version.stripSuffix("-SNAPSHOT")}-$fmtVersion-SNAPSHOT"
