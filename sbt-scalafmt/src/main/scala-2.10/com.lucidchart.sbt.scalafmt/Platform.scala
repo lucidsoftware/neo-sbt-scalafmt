@@ -1,6 +1,7 @@
 package com.lucidchart.sbt.scalafmt
 
 import sbinary.DefaultProtocol._
+import sbt.Keys._
 import sbt._
 import sbt.FileInfo.full.{format => hashModifiedFormat}
 import sbt.inc.Analysis
@@ -25,5 +26,13 @@ object CommandPlatform {
 }
 
 object LibraryPlatform {
-  def withOverrideScalaVersion(ivyScala: IvyScala, value: Boolean) = ivyScala.copy(overrideScalaVersion = value)
+  def moduleInfo(useIvy: SettingKey[Boolean]) =
+    ivyScala := {
+      if (useIvy.value) {
+        // otherwise scala-library conflicts
+        ivyScala.value.map(_.copy(overrideScalaVersion = false))
+      } else {
+        ivyScala.value
+      }
+    }
 }

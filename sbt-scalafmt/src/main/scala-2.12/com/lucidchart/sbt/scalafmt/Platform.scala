@@ -1,8 +1,8 @@
 package com.lucidchart.sbt.scalafmt
 
+import sbt.Keys._
 import sbt._
 import sbt.internal.inc.Analysis
-import sbt.librarymanagement.IvyScala
 import sbt.util.CacheImplicits._
 import sbt.util.CacheStore
 import scala.reflect.runtime.universe
@@ -35,5 +35,13 @@ object CommandPlatform {
 }
 
 object LibraryPlatform {
-  def withOverrideScalaVersion(ivyScala: IvyScala, value: Boolean) = ivyScala.withOverrideScalaVersion(value)
+  def moduleInfo(useIvy: SettingKey[Boolean]) =
+    scalaModuleInfo := {
+      if (useIvy.value) {
+        // otherwise scala-library conflicts
+        scalaModuleInfo.value.map(_.withOverrideScalaVersion(false))
+      } else {
+        scalaModuleInfo.value
+      }
+    }
 }
