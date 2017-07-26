@@ -5,5 +5,5 @@ import java.io.File
 import sbt.FileFilter
 
 class ScalafmtFileFilter(scalafmtter: Scalafmtter) extends FileFilter {
-  def accept(file: File) = scalafmtter.includeFile(file.toPath)
+  def accept(file: File) = file.isFile && scalafmtter.includeFile(file.toPath)
 }
