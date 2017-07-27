@@ -229,14 +229,6 @@ object ScalafmtCorePlugin extends AutoPlugin {
   override val projectSettings = Seq(
     externalDependencyClasspath in Scalafmt := Classpaths.managedJars(Scalafmt, classpathTypes.value, update.value),
     ivyConfigurations ++= (if (scalafmtUseIvy.value) Seq(Scalafmt) else Seq.empty),
-    ivyScala := {
-      if (scalafmtUseIvy.value) {
-        // otherwise scala-library conflicts
-        ivyScala.value.map(LibraryPlatform.withOverrideScalaVersion(_, false))
-      } else {
-        ivyScala.value
-      }
-    },
     libraryDependencies ++=
       (if (scalafmtUseIvy.value) (libraryDependencies in Scalafmt).value.map(_ % Scalafmt) else Seq.empty),
     libraryDependencies in Scalafmt := {
@@ -258,7 +250,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
       )
     },
     scalafmtUseIvy := true
-  )
+  ) :+ LibraryPlatform.moduleInfo(scalafmtUseIvy)
 
   override val requires = IvyPlugin && JvmPlugin
 

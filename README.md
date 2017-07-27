@@ -6,7 +6,7 @@
 An sbt plugin for [Scalafmt](http://scalameta.org/scalafmt/) that
 
 * formats .sbt and .scala files
-* supports sbt 0.13 and 1.0.0-M6
+* supports sbt 0.13 and 1.0.0-RC2
 * supports Scalafmt 0.6 and 1.0
 * runs in-process
 * uses sbt's ivy2 for dependency resolution

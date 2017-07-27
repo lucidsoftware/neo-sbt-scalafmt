@@ -15,12 +15,9 @@ object ScalafmtPlugin extends AutoPlugin {
               if (!sourcesInBase.value) {
                 Def.task(Seq.empty[File])
               } else if (includeFilter.value == UseScalafmtConfigFilter) {
-                (baseDirectory, scalafmtter)
-                  .map((base, scalafmtter) => (base * (new ScalafmtFileFilter(scalafmtter) && "*.scala")).get)
+                Def.task((baseDirectory.value * (new ScalafmtFileFilter(scalafmtter.value) && "*.scala")).get)
               } else {
-                (baseDirectory, includeFilter, excludeFilter).map(
-                  (base, include, exclude) => (base * include --- base * exclude).get
-                )
+                Def.task((baseDirectory.value * includeFilter.value --- baseDirectory.value * excludeFilter.value).get)
               }
             }
             .value
