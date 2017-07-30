@@ -78,7 +78,7 @@ lazy val sbtVersionAxis = new DefaultAxis {
 }
 
 lazy val `sbt-scalafmt` = project.dependsOn(`scalafmt-api`).cross(sbtVersionAxis)
-lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.15")
+lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.16")
   .settings(scriptedSettings)
   .settings(
     scriptedDependencies := {
@@ -91,5 +91,5 @@ lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.15")
 lazy val `sbt-scalafmt_1.0.0-RC3` = `sbt-scalafmt`("1.0.0-RC3")
 
 lazy val `sbt-scalafmt-coursier` = project.cross(sbtVersionAxis).dependsOn(`sbt-scalafmt`)
-lazy val `sbt-scalafmt-coursier_0.13` = `sbt-scalafmt-coursier`("0.13.15")
+lazy val `sbt-scalafmt-coursier_0.13` = `sbt-scalafmt-coursier`("0.13.16")
 lazy val `sbt-scalafmt-coursier_1.0.0-RC3` = `sbt-scalafmt-coursier`("1.0.0-RC3")
