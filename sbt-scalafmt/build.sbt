@@ -6,9 +6,11 @@ buildInfoPackage := "com.lucidchart.sbt.scalafmt"
 
 libraryDependencies ++= Seq(
   "com.google.code.findbugs" % "jsr305" % "3.0.2" % Provided, // fixes warnings about javax annotations
-  "com.google.guava" % "guava" % "19.0"
+  "com.google.guava" % "guava" % "19.0",
+  "com.michaelpollmeier" %% "colordiff" % "0.8"
 )
 
+resolvers += Resolver.mavenLocal
 sbtPlugin := true
 
 scalacOptions ++= Seq(
