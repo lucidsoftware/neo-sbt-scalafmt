@@ -181,7 +181,6 @@ object ScalafmtCorePlugin extends AutoPlugin {
                     val diff = ColorDiff(original.split('\n').toList, formatted.split('\n').toList)
                     s"$file has changes after scalafmt:\n$diff"
                   } else s"$file has changes after scalafmt"
-                  logger.warn(msg)
                   if (failForStyleIssues) logger.error(msg)
                   else logger.warn(msg)
                 }
