@@ -10,7 +10,6 @@ libraryDependencies ++= Seq(
   "com.michaelpollmeier" %% "colordiff" % "0.8"
 )
 
-resolvers += Resolver.mavenLocal
 sbtPlugin := true
 
 scalacOptions ++= Seq(
