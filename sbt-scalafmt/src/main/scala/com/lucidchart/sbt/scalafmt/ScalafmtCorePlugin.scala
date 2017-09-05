@@ -54,15 +54,19 @@ object ScalafmtCorePlugin extends AutoPlugin {
         {
           try scalafmtter(input)
           catch {
-            case NonFatal(e) if ignoreErrors =>
+            case NonFatal(e) =>
               val exceptionMesssage = e.getLocalizedMessage
               val message = if (exceptionMesssage.contains("<input>")) {
                 exceptionMesssage.replace("<input>", name)
               } else {
                 s"$name:\n$exceptionMesssage"
               }
-              logger.warn(message)
-              input
+              if (ignoreErrors) {
+                logger.warn(message)
+                input
+              } else {
+                throw new Exception(message, e)
+              }
           }
         }
     }
