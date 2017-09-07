@@ -92,6 +92,14 @@ ignoreErrors in scalafmt := false              // current project
 ignoreErrors in (Compile, scalafmt) := false   // current project, specific configuration
 ```
 
+By default, scalafmt just lists the files that have differences. You can configure it to show the actual diff like this:
+
+```scala
+scalafmtShowDiff in (ThisBuild, scalafmt) := false // all projects
+scalafmtShowDiff in scalafmt := false              // current project
+scalafmtShowDiff in (Compile, scalafmt) := false   // current project, specific configuration
+```
+
 ## Additional configuration
 
 The scalafmt task is defined by default for the compile and test configurations. To define it for additional

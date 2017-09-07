@@ -1,5 +1,6 @@
 package com.lucidchart.sbt.scalafmt
 
+import colordiff.ColorDiff
 import com.google.common.cache._
 import com.lucidchart.scalafmt.api.{Dialect, ScalafmtFactory, Scalafmtter}
 import java.io.FileNotFoundException
@@ -9,6 +10,7 @@ import sbt.Keys._
 import sbt._
 import sbt.plugins.{IvyPlugin, JvmPlugin}
 import scala.collection.breakOut
+import scala.io.Source
 import scala.util.control.NonFatal
 import scala.util.control.Exception.catching
 
@@ -43,6 +45,11 @@ object ScalafmtCorePlugin extends AutoPlugin {
     val scalafmtFailTest = SettingKey[Boolean](
       "scalafmt-Fail-Test",
       "Fail build when one or more style issues are found",
+      CSetting
+    )
+    val scalafmtShowDiff = SettingKey[Boolean](
+      "scalafmt-show-diff",
+      "show differences between original and formatted version",
       CSetting
     )
 
@@ -167,15 +174,21 @@ object ScalafmtCorePlugin extends AutoPlugin {
 
             val scalafmtter = scalafmtFn.value
             val failForStyleIssues = scalafmtFailTest.value
-            val differentCount = sources.value.count { file =>
-              val content = IO.read(file)
-              val hasChanges = content != scalafmtter(file.toString, content)
-              if (hasChanges) {
-                val msg = s"$file has changes after scalafmt"
-                if (failForStyleIssues) logger.error(msg)
-                else logger.warn(msg)
-              }
-              hasChanges
+            val showDiff = scalafmtShowDiff.value
+            val differentCount = sources.value.count {
+              file =>
+                val original = IO.read(file)
+                val formatted = scalafmtter(file.toString, original)
+                val hasChanges = original != formatted
+                if (hasChanges) {
+                  val msg = if (showDiff) {
+                    val diff = ColorDiff(original.split('\n').toList, formatted.split('\n').toList)
+                    s"$file has changes after scalafmt:\n$diff"
+                  } else s"$file has changes after scalafmt"
+                  if (failForStyleIssues) logger.error(msg)
+                  else logger.warn(msg)
+                }
+                hasChanges
             }
             AnalysisPlatform.counted("Scala source", "", "s", differentCount).foreach { message =>
               val msg = s"$message not formatted in $display"
@@ -227,7 +240,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
     scalafmtOnCompile := false,
     scalafmtTestOnCompile := false,
     scalafmtVersion := "0.6.8",
-    scalafmtFailTest := true
+    scalafmtFailTest := true,
+    scalafmtShowDiff := false
   )
 
   override val projectSettings = Seq(
