@@ -251,8 +251,9 @@ object ScalafmtCorePlugin extends AutoPlugin {
       (if (scalafmtUseIvy.value) (libraryDependencies in Scalafmt).value.map(_ % Scalafmt) else Seq.empty),
     libraryDependencies in Scalafmt := {
       val (scalaBinaryVersion, fmtVersion) = "(\\d+.){0,1}\\d+".r.findPrefixOf(scalafmtVersion.value) match {
-        case Some("0.6")                 => ("2.11", "0.6")
-        case Some("0.7" | "1.0" | "1.1"| "1.2") => ("2.12", "1.0")
+        case Some("0.6")                               => ("2.11", "0.6")
+        case Some("0.7")                               => ("2.12", "1.0")
+        case Some(version) if version.startsWith("1.") => ("2.12", "1.0")
         case _ =>
           println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}; using 1.0 interface")
           ("2.12", "1.0")
