@@ -2,15 +2,10 @@ package com.lucidchart.scalafmt.impl
 
 import com.lucidchart.scalafmt.api
 import com.lucidchart.scalafmt.api.{Dialect, Scalafmtter}
+import com.lucidchart.scalafmt.api.LRUCache
 import java.util.function
 import org.scalafmt.config.Config
 import scala.meta.dialects
-
-package com.lucidchart.scalafmt.impl
-
-import com.lucidchart.scalafmt.api
-import com.lucidchart.scalafmt.api.LRUCache
-import org.scalafmt.config.Config
 
 final class ScalafmtFactory extends api.ScalafmtFactory {
 
