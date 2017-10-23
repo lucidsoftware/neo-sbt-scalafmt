@@ -12,5 +12,6 @@ trait CachingScalafmtFactory extends api.ScalafmtFactory {
     Option(cachedFormatters.get(configString)).getOrElse {
       val formatter = buildScalafmtterFromConfig(configString)
       cachedFormatters.put(configString, formatter)
+      formatter
     }
 }
