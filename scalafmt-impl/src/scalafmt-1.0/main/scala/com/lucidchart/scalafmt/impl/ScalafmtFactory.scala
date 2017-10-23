@@ -1,13 +1,13 @@
 package com.lucidchart.scalafmt.impl
 
 import com.lucidchart.scalafmt.api
-import com.lucidchart.scalafmt.api.{Dialect, Scalafmtter}
 import java.util.function
 import org.scalafmt.config.Config
 import scala.meta.dialects
 
-final class ScalafmtFactory extends api.ScalafmtFactory {
+final class ScalafmtFactory extends CachingScalafmtFactory {
 
-  def fromConfig(configString: String) = new Scalafmtter(Config.fromHoconString(configString, Option.empty).get)
+  override def buildScalafmtterFromConfig(configString: String) =
+    new Scalafmtter(Config.fromHoconString(configString, Option.empty).get)
 
 }
