@@ -130,3 +130,5 @@ in a separate classloader, allowing them work regardless of the Scala version of
 * `ScalafmtCoursierPlugin` replaces the sbt ivy configuration with coursier.
 * `ScalafmtSbtPlugin` create scalafmt tasks for .sbt sources.
 * `ScalafmtPlugin` creates the scalafmt task for compile and test configurations.
+
+Scalafmt requires Java 8+.

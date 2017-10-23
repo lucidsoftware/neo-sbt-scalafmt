@@ -27,8 +27,8 @@ object ScalafmtCorePlugin extends AutoPlugin {
 
     val scalafmt = TaskKey[Unit]("scalafmt", "Format Scala sources", ATask)
     val scalafmtCache =
-      SettingKey[Seq[File] => ScalafmtFactory]("scalafmtCache", "Cache of Scalafmtter instances", DSetting)
-    val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], ScalafmtFactory]](
+      SettingKey[Seq[File] => String => Scalafmtter]("scalafmtCache", "Cache of Scalafmtter instances", DSetting)
+    val scalafmtCacheBuilder = SettingKey[CacheBuilder[Seq[File], String => Scalafmtter]](
       "scalafmt-cache-builder",
       "CacheBuilder for Scalafmtter cache",
       CSetting
@@ -151,7 +151,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
                 logger.debug(s"$file does not exist")
                 ""
             }
-            scalafmtCache.value(externalDependencyClasspath.value.map(_.data)).fromConfig(configString)
+            scalafmtCache.value(externalDependencyClasspath.value.map(_.data))(configString)
           },
           sources := Def.taskDyn {
             includeFilter.value match {
@@ -224,17 +224,25 @@ object ScalafmtCorePlugin extends AutoPlugin {
     ignoreErrors := true,
     includeFilter in scalafmt := UseScalafmtConfigFilter,
     scalafmtCache := {
-      val cache = scalafmtCacheBuilder.value.build(new CacheLoader[Seq[File], ScalafmtFactory] {
-        def load(classpath: Seq[File]) =
-          new BridgeClassLoader(classpath.map(_.toURI.toURL))(!_.startsWith("com.lucidchart.scalafmt.api."))
-            .loadClass("com.lucidchart.scalafmt.impl.ScalafmtFactory")
-            .asInstanceOf[Class[_ <: ScalafmtFactory]]
-            .newInstance
+      val cache = scalafmtCacheBuilder.value.build(new CacheLoader[Seq[File], String => Scalafmtter] {
+        def load(classpath: Seq[File]): String => Scalafmtter = {
+          val factory =
+            new BridgeClassLoader(classpath.map(_.toURI.toURL))(!_.startsWith("com.lucidchart.scalafmt.api."))
+              .loadClass("com.lucidchart.scalafmt.impl.ScalafmtFactory")
+              .asInstanceOf[Class[_ <: ScalafmtFactory]]
+              .newInstance
+          val cache = CacheBuilder.newBuilder
+            .maximumSize(5)
+            .build(new CacheLoader[String, Scalafmtter] {
+              def load(configString: String) = factory.fromConfig(configString)
+            })
+          cache.get
+        }
       })
       cache.get
     },
     scalafmtCacheBuilder := CacheBuilder.newBuilder
-      .asInstanceOf[CacheBuilder[Seq[File], ScalafmtFactory]]
+      .asInstanceOf[CacheBuilder[Seq[File], String => Scalafmtter]]
       .maximumSize(3),
     scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
     scalafmtOnCompile := false,
