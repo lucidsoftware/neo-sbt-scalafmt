@@ -1,4 +1,4 @@
-package com.lucidchart.scalafmt.api;
+package com.lucidchart.scalafmt.impl;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,7 +13,7 @@ public class LRUCache<K, V> extends LinkedHashMap<K, V> {
     private int cacheSize;
 
     public LRUCache(int cacheSize) {
-        // Magic happens here: the third parameter specifies that the keys are ordered on access not insertion.
+        // Magic happens here: the third parameter specifies that the keys are ordered by access not insertion.
         super(16, 0.75f, true);
         this.cacheSize = cacheSize;
     }
