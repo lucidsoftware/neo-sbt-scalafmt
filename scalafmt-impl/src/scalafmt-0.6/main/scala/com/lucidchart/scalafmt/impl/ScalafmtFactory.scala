@@ -8,6 +8,9 @@ import scala.meta.dialects
 
 final class ScalafmtFactory extends api.ScalafmtFactory {
 
-  def fromConfig(configString: String) = new Scalafmtter(Config.fromHocon(configString, Option.empty).right.get)
+  def fromConfig(configString: String) = Config.fromHocon(configString, Option.empty) match {
+    case Left(message) => throw new IllegalArgumentException(message)
+    case Right(config) => new Scalafmtter(config)
+  }
 
 }
