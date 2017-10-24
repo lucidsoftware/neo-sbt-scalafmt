@@ -88,8 +88,8 @@ lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.16")
     },
     scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
   )
-lazy val `sbt-scalafmt_1.0.0-RC3` = `sbt-scalafmt`("1.0.0-RC3")
+lazy val `sbt-scalafmt_1.0` = `sbt-scalafmt`("1.0.2")
 
 lazy val `sbt-scalafmt-coursier` = project.cross(sbtVersionAxis).dependsOn(`sbt-scalafmt`)
 lazy val `sbt-scalafmt-coursier_0.13` = `sbt-scalafmt-coursier`("0.13.16")
-lazy val `sbt-scalafmt-coursier_1.0.0-RC3` = `sbt-scalafmt-coursier`("1.0.0-RC3")
+lazy val `sbt-scalafmt-coursier_1.0` = `sbt-scalafmt-coursier`("1.0.2")
