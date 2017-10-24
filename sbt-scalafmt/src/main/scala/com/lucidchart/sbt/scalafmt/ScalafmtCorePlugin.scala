@@ -247,7 +247,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
     scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
     scalafmtOnCompile := false,
     scalafmtTestOnCompile := false,
-    scalafmtVersion := "0.6.8",
+    scalafmtVersion := "1.3.0",
     scalafmtFailTest := true,
     scalafmtShowDiff := false
   )
