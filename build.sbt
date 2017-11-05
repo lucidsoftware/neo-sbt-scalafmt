@@ -83,7 +83,7 @@ lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.16")
   .settings(
     scriptedDependencies := {
       (publishLocal in `scalafmt-api`).value
-      (publishLocal in `scalafmt-impl-0.6`).value
+      (publishLocal in `scalafmt-impl-1.0`).value
       scriptedDependencies.value
     },
     scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
