@@ -22,6 +22,7 @@ inScope(Global)(
         "scm:git:git@github.com:lucidsoftware/neo-sbt-scalafmt.git"
       )
     ),
+    startYear := Some(2017),
     version := sys.props.getOrElse("build.version", "0-SNAPSHOT")
   )
 )
