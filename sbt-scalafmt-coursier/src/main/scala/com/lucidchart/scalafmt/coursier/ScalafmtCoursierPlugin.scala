@@ -51,6 +51,7 @@ object ScalafmtCoursierPlugin extends AutoPlugin {
             .unsafePerformSync
             .map(_.valueOr(error => throw new IOException(error.describe)))
             .filter(_.ext == "jar")
+            .sorted
           streams.value.log.info(s"Fetched ${result.size} artifacts for scalafmt")
           IO.writeLines(cacheFile, newHash.toString +: result.map(_.toString))
           result
