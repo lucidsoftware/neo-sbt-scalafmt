@@ -13,7 +13,7 @@ class Scalafmtter(config: ScalafmtConfig) extends api.Scalafmtter {
 
   def formatter(dialect: Dialect) = new function.Function[String, String] {
     private[this] val config = dialect match {
-      case Dialect.SBT => self.config.copy(runner = self.config.runner.copy(dialect = dialects.Sbt0137))
+      case Dialect.SBT => scalafmt.Scalafmt.configWithDialect(self.config, dialects.Sbt0137)
       case Dialect.SCALA => self.config
     }
     def apply(code: String) = scalafmt.Scalafmt.format(code, config).get
