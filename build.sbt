@@ -40,13 +40,6 @@ lazy val localScalafmtVersion = settingKey[String]("Scalafmt version")
 
 lazy val `scalafmt-impl` = project
   .dependsOn(`scalafmt-api` % Provided.name)
-  .cross(new LibraryVersionAxis("scalafmt", localScalafmtVersion, _.split("\\.").take(2).mkString(".")))
-lazy val `scalafmt-impl-0.6` = `scalafmt-impl`("0.6.8").settings(
-  scalaVersion := "2.11.8"
-)
-lazy val `scalafmt-impl-1.0` = `scalafmt-impl`("1.0.0-RC3").settings(
-  scalaVersion := "2.12.2"
-)
 
 lazy val sbtVersionAxis = new DefaultAxis {
   protected[this] val name = "sbt"
@@ -84,7 +77,7 @@ lazy val `sbt-scalafmt_0.13` = `sbt-scalafmt`("0.13.16")
   .settings(
     scriptedDependencies := {
       (publishLocal in `scalafmt-api`).value
-      (publishLocal in `scalafmt-impl-1.0`).value
+      (publishLocal in `scalafmt-impl`).value
       scriptedDependencies.value
     },
     scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
