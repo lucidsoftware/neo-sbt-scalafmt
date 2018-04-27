@@ -47,6 +47,9 @@ lazy val `scalafmt-impl-0.6` = `scalafmt-impl`("0.6.8").settings(
 lazy val `scalafmt-impl-1.0` = `scalafmt-impl`("1.0.0-RC3").settings(
   scalaVersion := "2.12.2"
 )
+lazy val `scalafmt-impl-1.2` = `scalafmt-impl`("1.2.0").settings(
+  scalaVersion := "2.12.2"
+)
 
 lazy val sbtVersionAxis = new DefaultAxis {
   protected[this] val name = "sbt"
