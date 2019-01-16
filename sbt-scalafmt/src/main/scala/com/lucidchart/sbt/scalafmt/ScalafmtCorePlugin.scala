@@ -247,7 +247,7 @@ object ScalafmtCorePlugin extends AutoPlugin {
     scalafmtConfig := (baseDirectory in ThisBuild).value / ".scalafmt.conf",
     scalafmtOnCompile := false,
     scalafmtTestOnCompile := false,
-    scalafmtVersion := "1.3.0",
+    scalafmtVersion := "1.5.1",
     scalafmtFailTest := true,
     scalafmtShowDiff := false
   )
@@ -258,26 +258,33 @@ object ScalafmtCorePlugin extends AutoPlugin {
     libraryDependencies ++=
       (if (scalafmtUseIvy.value) (libraryDependencies in Scalafmt).value.map(_ % Scalafmt) else Seq.empty),
     libraryDependencies in Scalafmt := {
-      val (scalaBinaryVersion, fmtVersion) = "(\\d+.){0,1}\\d+".r.findPrefixOf(scalafmtVersion.value) match {
-        case Some("0.6")                               => ("2.11", "0.6")
-        case Some("0.7")                               => ("2.12", "1.3")
-        case Some(version) if version.startsWith("1.") => ("2.12", "1.3")
-        case _ =>
-          println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}; using 1.3 interface")
-          ("2.12", "1.3")
-      }
+      val (scalaBinaryVersion, fmtVersion, fmtOrg) = "(\\d+.){0,1}\\d+".r
+        .findPrefixOf(scalafmtVersion.value)
+        .flatMap { prefix =>
+          scalafmtMetadata.get(prefix)
+        }
+        .getOrElse {
+          println(s"Warning: Unknown Scalafmt version ${scalafmtVersion.value}; using 1.5 interface")
+          scalafmtMetadata("1.5")
+        }
       val version = if (BuildInfo.version.endsWith("-SNAPSHOT")) {
         s"${BuildInfo.version.stripSuffix("-SNAPSHOT")}-$fmtVersion-SNAPSHOT"
       } else {
         s"${BuildInfo.version}-$fmtVersion"
       }
+
       Seq(
-        "com.geirsson" % s"scalafmt-core_$scalaBinaryVersion" % scalafmtVersion.value,
+        fmtOrg % s"scalafmt-core_$scalaBinaryVersion" % scalafmtVersion.value,
         "com.lucidchart" % s"scalafmt-impl_$scalaBinaryVersion" % version
       )
     },
     scalafmtUseIvy := true
   ) :+ LibraryPlatform.moduleInfo(scalafmtUseIvy)
+
+  private val scalafmtMetadata = Map(
+    "1.5" -> ("2.12", "1.5", "com.geirsson"),
+    "2.0" -> ("2.12", "2.0", "org.scalameta")
+  )
 
   override val requires = IvyPlugin && JvmPlugin
 
