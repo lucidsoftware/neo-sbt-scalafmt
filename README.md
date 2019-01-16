@@ -95,9 +95,9 @@ ignoreErrors in (Compile, scalafmt) := false   // current project, specific conf
 By default, scalafmt just lists the files that have differences. You can configure it to show the actual diff like this:
 
 ```scala
-scalafmtShowDiff in (ThisBuild, scalafmt) := false // all projects
-scalafmtShowDiff in scalafmt := false              // current project
-scalafmtShowDiff in (Compile, scalafmt) := false   // current project, specific configuration
+scalafmtShowDiff in (ThisBuild, scalafmt) := true // all projects
+scalafmtShowDiff in scalafmt := true              // current project
+scalafmtShowDiff in (Compile, scalafmt) := true   // current project, specific configuration
 ```
 
 ## Additional configuration
