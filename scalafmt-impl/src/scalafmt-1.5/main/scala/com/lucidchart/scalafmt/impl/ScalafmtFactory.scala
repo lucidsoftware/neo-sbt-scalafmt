@@ -1,7 +1,6 @@
 package com.lucidchart.scalafmt.impl
 
 import com.lucidchart.scalafmt.api
-import com.lucidchart.scalafmt.api.{Dialect, Scalafmtter}
 import java.util.function
 import org.scalafmt.config.Config
 import scala.meta.dialects
