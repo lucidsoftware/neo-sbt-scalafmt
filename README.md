@@ -1,6 +1,6 @@
 # neo-sbt-scalafmt
 
-[![Build Status](https://travis-ci.org/lucidsoftware/neo-sbt-scalafmt.svg)](https://travis-ci.org/lucidsoftware/neo-sbt-scalafmt)
+[![Build Status](https://travis-ci.com/lucidsoftware/neo-sbt-scalafmt.svg)](https://travis-ci.com/lucidsoftware/neo-sbt-scalafmt)
 [![Maven Version](https://img.shields.io/maven-central/v/com.lucidchart/scalafmt-api.svg)](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.lucidchart%22%20AND%20a%3A%22scalafmt-api%22)
 
 An sbt plugin for [Scalafmt](http://scalameta.org/scalafmt/) that
