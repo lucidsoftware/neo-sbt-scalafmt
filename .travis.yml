@@ -14,6 +14,7 @@ git:
   depth: 1
 jdk:
   - openjdk8
+dist: bionic
 language: scala
 script:
   - '[ "$TRAVIS_PULL_REQUEST" != false ] || export SBT_OPTS="-Dbuild.version=${TRAVIS_TAG:-$TRAVIS_BRANCH-SNAPSHOT} -DscalafmtOnCompile=false"'
